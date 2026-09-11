@@ -4,19 +4,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if not DATABASE_URL:
-    raise RuntimeError(
-        "DATABASE_URL environment variable is not set. "
-        "Please configure it in backend/.env."
-    )
+# PostgreSQL Database URL
+DATABASE_URL = "postgresql+psycopg://postgres:1234@localhost:5432/infosys_internship"
 
 
+# Create database engine
 engine = create_engine(
     DATABASE_URL,
 )
 
+
+# Create database session
 SessionLocal = sessionmaker(
     bind=engine,
     autoflush=False,
@@ -24,10 +22,12 @@ SessionLocal = sessionmaker(
 )
 
 
+# SQLAlchemy Base
 class Base(DeclarativeBase):
     pass
 
 
+# Database dependency
 def get_db():
     db = SessionLocal()
 
