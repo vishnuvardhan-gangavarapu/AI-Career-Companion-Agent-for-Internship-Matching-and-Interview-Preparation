@@ -649,9 +649,17 @@ export default function CreateCoverLetter() {
         contentLength: String(coverLetter.content).trim().length,
       });
 
-      setSuccess(
-        "Cover letter selected. You can now apply for this internship.",
-      );
+      /*
+       * The cover letter is now selected and stored.
+       * Return immediately to Internship Details so the user can
+       * apply without having to navigate back manually.
+       */
+      navigate(`/internships/${internshipId}`, {
+        state: {
+          internship,
+        },
+      });
+      return;
     } catch (err) {
       console.error("Cover letter selection error:", err);
 
@@ -1027,22 +1035,12 @@ export default function CreateCoverLetter() {
                   </div>
 
                   <div className="cl-paper-content">
-                    <p className="cl-letter-greeting">Dear Hiring Team,</p>
-
                     {String(coverLetter.content)
                       .split(/\n\s*\n/)
                       .filter(Boolean)
                       .map((paragraph, index) => (
                         <p key={index}>{paragraph.trim()}</p>
                       ))}
-
-                    <p>
-                      Sincerely,
-                      <br />
-                      <strong>
-                        {coverLetter.candidate_name || "Candidate"}
-                      </strong>
-                    </p>
                   </div>
                 </div>
 

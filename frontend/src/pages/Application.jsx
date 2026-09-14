@@ -103,6 +103,9 @@ export default function Application() {
 
   const [withdrawing, setWithdrawing] = useState(false);
 
+  // Application waiting for the user's withdraw confirmation.
+  const [withdrawConfirmation, setWithdrawConfirmation] = useState(null);
+
   /* =========================================================
      LOAD APPLICATIONS
   ========================================================= */
@@ -214,17 +217,37 @@ export default function Application() {
      WITHDRAW
   ========================================================= */
 
-  const handleWithdraw = async (applicationId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to withdraw this application?",
+  const handleWithdraw = (applicationId) => {
+    if (!token) {
+      alert("Please login again.");
+      return;
+    }
+
+    const application = applications.find(
+      (item) => item.application_id === applicationId,
     );
 
-    if (!confirmed) {
+    setWithdrawConfirmation({
+      applicationId,
+      jobTitle: application?.job_title || "this internship",
+      companyName: application?.company_name || "the company",
+    });
+  };
+
+  const cancelWithdraw = () => {
+    if (withdrawing) return;
+    setWithdrawConfirmation(null);
+  };
+
+  const confirmWithdraw = async () => {
+    if (!withdrawConfirmation?.applicationId) {
+      setWithdrawConfirmation(null);
       return;
     }
 
     if (!token) {
       alert("Please login again.");
+      setWithdrawConfirmation(null);
       return;
     }
 
@@ -232,10 +255,9 @@ export default function Application() {
       setWithdrawing(true);
 
       const response = await fetch(
-        `${API_BASE_URL}/api/applications/${applicationId}/withdraw`,
+        `${API_BASE_URL}/api/applications/${withdrawConfirmation.applicationId}/withdraw`,
         {
           method: "PATCH",
-
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
@@ -249,14 +271,13 @@ export default function Application() {
         throw new Error(data?.detail || "Unable to withdraw application.");
       }
 
-      alert("Application withdrawn successfully.");
-
+      setWithdrawConfirmation(null);
       setSelectedApplication(null);
-
       await loadApplications();
+
+      alert("Application withdrawn successfully.");
     } catch (err) {
       console.error("Withdraw application error:", err);
-
       alert(err?.message || "Unable to withdraw application.");
     } finally {
       setWithdrawing(false);
@@ -626,6 +647,65 @@ export default function Application() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* =====================================================
+          WITHDRAW CONFIRMATION POPUP
+      ===================================================== */}
+
+      {withdrawConfirmation && (
+        <div
+          className="withdraw-confirm-overlay"
+          onClick={cancelWithdraw}
+          role="presentation"
+        >
+          <div
+            className="withdraw-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="withdraw-confirm-title"
+            aria-describedby="withdraw-confirm-message"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="withdraw-confirm-icon">
+              <RotateCcw size={25} />
+            </div>
+
+            <div className="withdraw-confirm-content">
+              <h2 id="withdraw-confirm-title">Withdraw Application?</h2>
+
+              <p id="withdraw-confirm-message">
+                Are you sure you want to withdraw your application for{" "}
+                <strong>{withdrawConfirmation.jobTitle}</strong> at{" "}
+                <strong>{withdrawConfirmation.companyName}</strong>?
+              </p>
+
+              <span className="withdraw-confirm-note">
+                This action will change the application status to Withdrawn.
+              </span>
+            </div>
+
+            <div className="withdraw-confirm-actions">
+              <button
+                type="button"
+                className="withdraw-cancel-button"
+                onClick={cancelWithdraw}
+                disabled={withdrawing}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="withdraw-confirm-button"
+                onClick={confirmWithdraw}
+                disabled={withdrawing}
+              >
+                <RotateCcw size={17} />
+                {withdrawing ? "Withdrawing..." : "Withdraw"}
+              </button>
+            </div>
           </div>
         </div>
       )}

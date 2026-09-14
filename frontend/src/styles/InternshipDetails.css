@@ -67,6 +67,7 @@
     linear-gradient(rgba(75, 88, 125, 0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(75, 88, 125, 0.035) 1px, transparent 1px);
   background-size: 46px 46px;
+  -webkit-mask-image: linear-gradient(#000, transparent 90%);
   mask-image: linear-gradient(#000, transparent 90%);
 }
 .id-bg-orb {
@@ -128,8 +129,8 @@
   box-shadow:
     var(--id-shadow-sm),
     inset 0 1px 0 #fff;
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   font: inherit;
   font-size: 12px;
   font-weight: 800;
@@ -183,6 +184,7 @@
   box-shadow:
     var(--id-shadow-sm),
     inset 0 1px #fff;
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   font: inherit;
   font-size: 11px;
@@ -210,6 +212,7 @@
   border: 1px solid;
   border-radius: 15px;
   box-shadow: var(--id-shadow-sm);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   font-size: 11px;
   font-weight: 750;
@@ -275,8 +278,8 @@
   box-shadow:
     var(--id-shadow),
     inset 0 1px #fff;
-  backdrop-filter: blur(30px) saturate(140%);
   -webkit-backdrop-filter: blur(30px) saturate(140%);
+  backdrop-filter: blur(30px) saturate(140%);
   animation: idUp 0.7s 0.05s var(--id-ease) both;
 }
 .id-hero::after {
@@ -387,8 +390,14 @@
   line-height: 1.03;
   letter-spacing: -2.5px;
   font-weight: 850;
-  text-wrap: balance;
 }
+
+@supports (text-wrap: balance) {
+  .id-hero-copy h1 {
+    text-wrap: balance;
+  }
+}
+
 .id-company-name {
   margin: 9px 0 0;
   color: #66748c;
@@ -427,6 +436,7 @@
   box-shadow:
     0 20px 50px rgba(54, 67, 111, 0.08),
     inset 0 1px #fff;
+  -webkit-backdrop-filter: blur(22px);
   backdrop-filter: blur(22px);
   transition: 0.35s var(--id-ease);
 }
@@ -513,6 +523,7 @@
   box-shadow:
     var(--id-shadow-sm),
     inset 0 1px #fff;
+  -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
   animation: idUp 0.65s 0.12s var(--id-ease) both;
 }
@@ -666,6 +677,7 @@
   box-shadow:
     var(--id-shadow-sm),
     inset 0 1px #fff;
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   transition: 0.3s var(--id-ease);
   animation: idUp 0.6s var(--id-ease) both;
@@ -747,8 +759,8 @@
   box-shadow:
     var(--id-shadow),
     inset 0 1px #fff;
-  backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
 }
 .id-glass-section {
   position: relative;
@@ -1052,6 +1064,7 @@
   box-shadow:
     var(--id-shadow),
     inset 0 1px #fff;
+  -webkit-backdrop-filter: blur(22px);
   backdrop-filter: blur(22px);
   transition: 0.35s var(--id-ease);
   animation: idUp 0.65s var(--id-ease) both;
@@ -1732,6 +1745,7 @@
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.72);
   box-shadow: var(--id-shadow);
+  -webkit-backdrop-filter: blur(28px);
   backdrop-filter: blur(28px);
   animation: idUp 0.65s var(--id-ease) both;
 }
@@ -2076,7 +2090,6 @@
   }
 }
 
-
 /* =========================================================
    SMOOTH SCROLLING + SCROLL MOTION
    ========================================================= */
@@ -2095,7 +2108,6 @@ body {
 .id-page {
   scroll-behavior: smooth;
   overscroll-behavior-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Smooth anchor navigation */
@@ -2109,9 +2121,11 @@ body {
 }
 
 /* Smooth scrollbar */
-.id-page {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(103, 88, 232, 0.28) transparent;
+@supports (scrollbar-width: thin) {
+  .id-page {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(103, 88, 232, 0.28) transparent;
+  }
 }
 
 .id-page::-webkit-scrollbar {
@@ -2169,7 +2183,7 @@ body {
 @keyframes idScrollReveal {
   from {
     opacity: 0;
-    transform: translate3d(0, 26px, 0) scale(.985);
+    transform: translate3d(0, 26px, 0) scale(0.985);
     filter: blur(2px);
   }
 
@@ -2232,11 +2246,12 @@ body {
   }
 
   .id-page {
-    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
   .id-page::-webkit-scrollbar {
     width: 0;
+    height: 0;
   }
 
   .id-glass-section:hover,

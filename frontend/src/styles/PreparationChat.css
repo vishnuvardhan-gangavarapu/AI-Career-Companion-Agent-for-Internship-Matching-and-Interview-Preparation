@@ -3348,11 +3348,19 @@
   max-height: 82px;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .preparation-current-documents-list::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
+}
+
+@supports (scrollbar-width: none) {
+  .preparation-current-documents-list {
+    scrollbar-width: none;
+  }
 }
 
 .preparation-current-document {
@@ -3402,7 +3410,7 @@
   max-height: 76px;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: 2px 2px 8px;
 }
 
@@ -4124,12 +4132,19 @@
 }
 
 .preparation-sidebar-content {
-  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+@supports (scrollbar-width: auto) {
+  .preparation-sidebar-content {
+    scrollbar-width: none;
+  }
 }
 
 .preparation-sidebar-content::-webkit-scrollbar,
 .preparation-history-list::-webkit-scrollbar {
   width: 0;
+  height: 0;
   display: none;
 }
 
@@ -4146,10 +4161,15 @@
   height: 100%;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: rgba(79, 70, 229, 0.4) transparent !important;
   overscroll-behavior: contain;
   padding-right: 2px;
+}
+
+@supports (scrollbar-width: thin) {
+  .preparation-messages-container {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(79, 70, 229, 0.4) transparent !important;
+  }
 }
 
 .preparation-messages-container::-webkit-scrollbar {
@@ -4194,7 +4214,19 @@
   max-height: calc(100dvh - 285px);
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE/Edge legacy */
+}
+
+@supports (scrollbar-width: none) {
+  .preparation-history-list {
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+.preparation-history-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 /* Keep the bottom composer inside the viewport. */
@@ -4359,8 +4391,6 @@
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
   scroll-behavior: smooth !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: rgba(79, 70, 229, 0.48) transparent !important;
   -ms-overflow-style: auto !important;
 }
 
@@ -4624,8 +4654,21 @@
   overflow-x: hidden !important;
   overflow-y: auto !important;
   padding-bottom: 0 !important;
-  scrollbar-width: thin !important;
   -ms-overflow-style: auto !important;
+}
+
+.preparation-messages-container::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.preparation-messages-container::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.preparation-messages-container::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.6) !important;
+  border-radius: 999px !important;
 }
 
 .preparation-messages-inner {

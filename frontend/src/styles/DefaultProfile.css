@@ -6,22 +6,15 @@
   --orange: #f59e0b;
   --green: #10b981;
   --red: #ef476f;
-
   --heading: #17213a;
   --text: #52617b;
   --muted: #8b98ad;
-
   position: relative;
-
   width: 100%;
   min-height: 100vh;
-
   overflow: hidden;
-
   padding: 42px 30px 70px;
-
   color: var(--heading);
-
   background:
     radial-gradient(
       circle at 0% 0%,
@@ -44,9 +37,7 @@
       #eef2ff 50%,
       #f8faff 100%
     );
-
   isolation: isolate;
-
   animation:
     pageAppear
     0.7s
@@ -54,32 +45,19 @@
     both;
 }
 
-
-/* ============================================================
-   BACKGROUND
-   ============================================================ */
-
 .profile-background {
   position: absolute;
-
   inset: 0;
-
   overflow: hidden;
-
   pointer-events: none;
-
   z-index: -1;
 }
 
 .background-orb {
   position: absolute;
-
   border-radius: 50%;
-
   filter: blur(90px);
-
   opacity: 0.45;
-
   animation:
     orbMovement
     12s
@@ -90,10 +68,8 @@
 .orb-purple {
   width: 400px;
   height: 400px;
-
   top: -180px;
   right: 4%;
-
   background:
     rgba(129, 120, 255, 0.18);
 }
@@ -101,36 +77,27 @@
 .orb-blue {
   width: 330px;
   height: 330px;
-
   left: -170px;
   top: 40%;
-
   background:
     rgba(59, 130, 246, 0.11);
-
   animation-delay: -4s;
 }
 
 .orb-cyan {
   width: 310px;
   height: 310px;
-
   right: -140px;
   bottom: -120px;
-
   background:
     rgba(6, 182, 212, 0.1);
-
   animation-delay: -8s;
 }
 
 .background-grid {
   position: absolute;
-
   inset: 0;
-
   opacity: 0.32;
-
   background-image:
     linear-gradient(
       rgba(98, 87, 245, 0.035) 1px,
@@ -141,9 +108,13 @@
       rgba(98, 87, 245, 0.035) 1px,
       transparent 1px
     );
-
   background-size: 46px 46px;
-
+  -webkit-mask-image:
+    linear-gradient(
+      to bottom,
+      black,
+      transparent 90%
+    );
   mask-image:
     linear-gradient(
       to bottom,
@@ -154,21 +125,16 @@
 
 .background-dot {
   position: absolute;
-
   width: 7px;
   height: 7px;
-
   border-radius: 50%;
-
   background:
     rgba(98, 87, 245, 0.28);
-
   box-shadow:
     0 0 0 7px
       rgba(98, 87, 245, 0.04),
     0 0 25px
       rgba(98, 87, 245, 0.2);
-
   animation:
     dotMovement
     7s
@@ -184,52 +150,31 @@
 .dot-two {
   top: 15%;
   right: 18%;
-
   width: 5px;
   height: 5px;
-
   animation-delay: -2s;
 }
 
 .dot-three {
   right: 7%;
   bottom: 25%;
-
   width: 6px;
   height: 6px;
-
   animation-delay: -4s;
 }
 
-
-/* ============================================================
-   CONTAINER
-   ============================================================ */
-
 .profile-container {
   width: 100%;
-
   max-width: 1380px;
-
   margin: 0 auto;
 }
 
-
-/* ============================================================
-   PAGE HEADER
-   ============================================================ */
-
 .profile-page-header {
   display: flex;
-
   align-items: flex-end;
-
   justify-content: space-between;
-
   gap: 30px;
-
   margin-bottom: 30px;
-
   animation:
     headerAppear
     0.75s
@@ -243,38 +188,25 @@
 
 .header-badge {
   display: inline-flex;
-
   align-items: center;
-
   gap: 8px;
-
   padding: 8px 13px;
-
   border:
     1px solid
     rgba(98, 87, 245, 0.14);
-
   border-radius: 999px;
-
   color: var(--primary);
-
   background:
     rgba(255, 255, 255, 0.5);
-
-  backdrop-filter: blur(16px);
-
   -webkit-backdrop-filter: blur(16px);
-
+  backdrop-filter: blur(16px);
   box-shadow:
     inset 0 1px 0
       rgba(255, 255, 255, 0.95),
     0 10px 25px
       rgba(55, 65, 120, 0.05);
-
   font-size: 9px;
-
   font-weight: 850;
-
   letter-spacing: 1.5px;
 }
 
@@ -288,24 +220,17 @@
 
 .header-left h1 {
   margin: 14px 0 0;
-
   color: #1c2742;
-
   font-size:
     clamp(36px, 4vw, 52px);
-
   line-height: 1;
-
   font-weight: 820;
-
   letter-spacing: -2.4px;
 }
 
 .header-left h1 span {
   display: inline-block;
-
   margin-left: 10px;
-
   background:
     linear-gradient(
       110deg,
@@ -313,63 +238,41 @@
       #7958ed 50%,
       #079fc1
     );
-
   -webkit-background-clip: text;
   background-clip: text;
-
   -webkit-text-fill-color: transparent;
 }
 
 .header-left p {
   max-width: 620px;
-
   margin: 13px 0 0;
-
   color: var(--text);
-
   font-size: 13px;
-
   line-height: 1.7;
 }
 
-
-/* ============================================================
-   ACCOUNT STATUS
-   ============================================================ */
-
 .header-action {
   display: flex;
-
   align-items: center;
-
   gap: 10px;
-
   min-width: 155px;
-
   padding: 12px 16px;
-
   border:
     1px solid
     rgba(255, 255, 255, 0.82);
-
   border-radius: 18px;
-
   background:
     linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.73),
       rgba(255, 255, 255, 0.42)
     );
-
-  backdrop-filter: blur(25px);
-
   -webkit-backdrop-filter: blur(25px);
-
+  backdrop-filter: blur(25px);
   box-shadow:
     0 18px 42px
       rgba(44, 58, 105, 0.07),
     inset 0 1px 0 white;
-
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
@@ -377,7 +280,6 @@
 
 .header-action:hover {
   transform: translateY(-4px);
-
   box-shadow:
     0 25px 55px
       rgba(44, 58, 105, 0.12),
@@ -386,22 +288,16 @@
 
 .header-action > svg {
   margin-left: auto;
-
   color: var(--green);
 }
 
 .active-indicator {
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   width: 31px;
   height: 31px;
-
   border-radius: 11px;
-
   background:
     rgba(16, 185, 129, 0.1);
 }
@@ -409,16 +305,12 @@
 .active-indicator span {
   width: 8px;
   height: 8px;
-
   border-radius: 50%;
-
   background:
     var(--green);
-
   box-shadow:
     0 0 0 6px
       rgba(16, 185, 129, 0.08);
-
   animation:
     statusPulse
     2s
@@ -428,62 +320,42 @@
 
 .active-copy small {
   display: block;
-
   margin-bottom: 3px;
-
   color: var(--muted);
-
   font-size: 7px;
-
   font-weight: 850;
-
   letter-spacing: 1.2px;
 }
 
 .active-copy strong {
   color: #12956e;
-
   font-size: 12px;
-
   font-weight: 800;
 }
 
-
-/* ============================================================
-   GLASS CARD
-   ============================================================ */
-
 .glass-card {
   position: relative;
-
   overflow: hidden;
-
   border:
     1px solid
     rgba(255, 255, 255, 0.82);
-
   border-radius: 28px;
-
   background:
     linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.69),
       rgba(255, 255, 255, 0.4)
     );
-
-  backdrop-filter:
-    blur(28px)
-    saturate(145%);
-
   -webkit-backdrop-filter:
     blur(28px)
     saturate(145%);
-
+  backdrop-filter:
+    blur(28px)
+    saturate(145%);
   box-shadow:
     0 25px 65px
       rgba(49, 63, 110, 0.075),
     inset 0 1px 0 white;
-
   transition:
     transform 0.38s
       cubic-bezier(0.22, 1, 0.36, 1),
@@ -493,17 +365,12 @@
 
 .glass-card::before {
   content: "";
-
   position: absolute;
-
   top: 0;
   left: -130%;
-
   width: 75%;
   height: 100%;
-
   pointer-events: none;
-
   background:
     linear-gradient(
       105deg,
@@ -511,13 +378,10 @@
       rgba(255, 255, 255, 0.36) 50%,
       transparent 83%
     );
-
   transform: skewX(-18deg);
-
   transition:
     left 0.9s
       cubic-bezier(0.22, 1, 0.36, 1);
-
   z-index: 5;
 }
 
@@ -527,30 +391,20 @@
 
 .glass-card:hover {
   transform: translateY(-6px);
-
   border-color:
     rgba(98, 87, 245, 0.18);
-
   box-shadow:
     0 35px 80px
       rgba(49, 63, 110, 0.12),
     inset 0 1px 0 white;
 }
 
-
-/* ============================================================
-   MAIN CONTENT
-   ============================================================ */
-
 .profile-layout {
   display: grid;
-
   grid-template-columns:
     minmax(0, 1.25fr)
     minmax(350px, 0.75fr);
-
   gap: 22px;
-
   animation:
     contentAppear
     0.8s
@@ -559,30 +413,18 @@
     both;
 }
 
-
-/* ============================================================
-   PERSONAL DETAILS
-   ============================================================ */
-
 .details-card {
   min-height: 390px;
-
   padding: 30px;
 }
 
 .card-top {
   position: relative;
-
   z-index: 3;
-
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
   padding-bottom: 22px;
-
   border-bottom:
     1px solid
     rgba(100, 116, 139, 0.08);
@@ -590,24 +432,17 @@
 
 .card-heading {
   display: flex;
-
   align-items: center;
-
   gap: 13px;
 }
 
 .heading-icon {
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   width: 47px;
   height: 47px;
-
   border-radius: 15px;
-
   border:
     1px solid
     rgba(255, 255, 255, 0.7);
@@ -615,65 +450,45 @@
 
 .heading-icon.blue {
   color: #5663e8;
-
   background:
     rgba(86, 99, 232, 0.1);
 }
 
 .card-heading span {
   display: block;
-
   margin-bottom: 4px;
-
   color: #909caf;
-
   font-size: 8px;
-
   font-weight: 850;
-
   letter-spacing: 1.2px;
 }
 
 .card-heading h3 {
   margin: 0;
-
   color: #293650;
-
   font-size: 18px;
-
   font-weight: 800;
 }
 
 .card-status {
   display: flex;
-
   align-items: center;
-
   gap: 6px;
-
   padding: 7px 10px;
-
   border-radius: 999px;
-
   color: #16936d;
-
   background:
     rgba(16, 185, 129, 0.065);
-
   font-size: 8px;
-
   font-weight: 800;
 }
 
 .card-status span {
   width: 6px;
   height: 6px;
-
   border-radius: 50%;
-
   background:
     var(--green);
-
   animation:
     statusPulse
     2s
@@ -681,39 +496,23 @@
     infinite;
 }
 
-
-/* ============================================================
-   DETAIL LIST
-   ============================================================ */
-
 .details-list {
   position: relative;
-
   z-index: 3;
-
   display: grid;
-
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
-
   gap: 6px 14px;
-
   margin-top: 11px;
 }
 
 .profile-detail {
   display: flex;
-
   align-items: center;
-
   gap: 12px;
-
   min-width: 0;
-
   padding: 16px 9px;
-
   border-radius: 16px;
-
   transition:
     transform 0.3s
       cubic-bezier(0.22, 1, 0.36, 1),
@@ -723,10 +522,8 @@
 
 .profile-detail:hover {
   transform: translateX(6px);
-
   background:
     rgba(255, 255, 255, 0.44);
-
   box-shadow:
     0 10px 25px
       rgba(60, 75, 125, 0.055);
@@ -734,22 +531,15 @@
 
 .detail-icon {
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   width: 44px;
   height: 44px;
-
   flex-shrink: 0;
-
   border-radius: 14px;
-
   border:
     1px solid
     rgba(255, 255, 255, 0.7);
-
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
@@ -759,7 +549,6 @@
   transform:
     rotate(-4deg)
     scale(1.08);
-
   box-shadow:
     0 9px 20px
       rgba(50, 65, 115, 0.08);
@@ -767,28 +556,24 @@
 
 .detail-icon.blue {
   color: #5865e8;
-
   background:
     rgba(88, 101, 232, 0.1);
 }
 
 .detail-icon.cyan {
   color: #0798ba;
-
   background:
     rgba(7, 152, 186, 0.09);
 }
 
 .detail-icon.purple {
   color: #8054df;
-
   background:
     rgba(128, 84, 223, 0.09);
 }
 
 .detail-icon.orange {
   color: #dc8a08;
-
   background:
     rgba(220, 138, 8, 0.1);
 }
@@ -799,33 +584,21 @@
 
 .detail-content span {
   display: block;
-
   margin-bottom: 5px;
-
   color: #919db0;
-
   font-size: 8px;
-
   font-weight: 800;
-
   letter-spacing: 1px;
 }
 
 .detail-content strong {
   display: block;
-
   max-width: 230px;
-
   overflow: hidden;
-
   color: #2d3b57;
-
   font-size: 13px;
-
   font-weight: 750;
-
   text-overflow: ellipsis;
-
   white-space: nowrap;
 }
 
@@ -835,13 +608,9 @@
 
 .detail-arrow {
   margin-left: auto;
-
   color: #b1bac9;
-
   opacity: 0;
-
   transform: translateX(-4px);
-
   transition:
     opacity 0.25s ease,
     transform 0.25s ease;
@@ -849,42 +618,29 @@
 
 .profile-detail:hover .detail-arrow {
   opacity: 1;
-
   transform:
     translateX(0);
 }
 
-
-/* ============================================================
-   RESUME CARD
-   ============================================================ */
-
 .resume-card {
   min-height: 390px;
-
   padding: 30px;
 }
 
 .resume-decoration {
   position: absolute;
-
   width: 290px;
   height: 290px;
-
   top: -170px;
   right: -100px;
-
   border-radius: 50%;
-
   background:
     radial-gradient(
       circle,
       rgba(98, 87, 245, 0.15),
       transparent 70%
     );
-
   filter: blur(10px);
-
   transition:
     transform 0.5s ease;
 }
@@ -897,35 +653,24 @@
 
 .resume-icon-box {
   position: relative;
-
   z-index: 3;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   width: 62px;
   height: 62px;
-
   margin-bottom: 20px;
-
   border-radius: 19px;
-
   color: white;
-
   background:
     linear-gradient(
       135deg,
       #5d68ee,
       #8156e3
     );
-
   box-shadow:
     0 16px 35px
       rgba(89, 96, 224, 0.26);
-
   animation:
     resumeFloat
     4s
@@ -935,77 +680,46 @@
 
 .resume-label {
   position: relative;
-
   z-index: 3;
-
   display: block;
-
   margin-bottom: 7px;
-
   color: var(--primary);
-
   font-size: 8px;
-
   font-weight: 850;
-
   letter-spacing: 1.3px;
 }
 
 .resume-card h3 {
   position: relative;
-
   z-index: 3;
-
   margin: 0;
-
   color: #293650;
-
   font-size: 23px;
-
   line-height: 1.15;
-
   font-weight: 800;
-
   letter-spacing: -0.7px;
 }
 
 .resume-card > p {
   position: relative;
-
   z-index: 3;
-
   margin: 10px 0 20px;
-
   color: #71809a;
-
   font-size: 11px;
-
   line-height: 1.7;
 }
 
-
-/* ============================================================
-   RESUME PROGRESS
-   ============================================================ */
-
 .resume-progress {
   position: relative;
-
   z-index: 3;
-
   padding: 14px;
-
   margin-bottom: 17px;
-
   border:
     1px solid
     rgba(255, 255, 255, 0.68);
-
   border-radius: 16px;
-
   background:
     rgba(255, 255, 255, 0.29);
-
   box-shadow:
     inset 0 1px 0
       rgba(255, 255, 255, 0.72);
@@ -1013,65 +727,48 @@
 
 .progress-header {
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
   margin-bottom: 9px;
 }
 
 .progress-header span {
   color: #7d8aa1;
-
   font-size: 9px;
-
   font-weight: 700;
 }
 
 .progress-header strong {
   color: var(--primary);
-
   font-size: 11px;
-
   font-weight: 850;
 }
 
 .progress-track {
   position: relative;
-
   width: 100%;
   height: 8px;
-
   overflow: hidden;
-
   border-radius: 999px;
-
   background:
     rgba(98, 87, 245, 0.08);
 }
 
 .progress-value {
   position: relative;
-
   width: 20%;
   height: 100%;
-
   overflow: hidden;
-
   border-radius: inherit;
-
   background:
     linear-gradient(
       90deg,
       #5968ee,
       #8156e2
     );
-
   box-shadow:
     0 0 16px
       rgba(89, 104, 238, 0.3);
-
   animation:
     progressGrow
     1.2s
@@ -1082,13 +779,10 @@
 
 .progress-value span {
   position: absolute;
-
   top: 0;
   left: -60px;
-
   width: 55px;
   height: 100%;
-
   background:
     linear-gradient(
       90deg,
@@ -1096,7 +790,6 @@
       rgba(255, 255, 255, 0.75),
       transparent
     );
-
   animation:
     progressShine
     2.7s
@@ -1106,25 +799,17 @@
 
 .progress-footer {
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
   margin-top: 9px;
-
   font-size: 9px;
-
   font-weight: 750;
 }
 
 .progress-footer div {
   display: flex;
-
   align-items: center;
-
   gap: 6px;
-
   color: #3ba576;
 }
 
@@ -1132,57 +817,34 @@
   color: #9aa5b7;
 }
 
-
-/* ============================================================
-   RESUME BUTTON
-   ============================================================ */
-
 .resume-button {
   position: relative;
-
   z-index: 3;
-
   display: flex;
-
   align-items: center;
-
   width: 100%;
-
   min-height: 48px;
-
   gap: 9px;
-
   overflow: hidden;
-
   padding: 10px 12px;
-
   border:
     1px solid
     rgba(255, 255, 255, 0.25);
-
   border-radius: 14px;
-
   color: white;
-
   background:
     linear-gradient(
       135deg,
       #5967eb,
       #7655df
     );
-
   box-shadow:
     0 13px 30px
       rgba(82, 92, 222, 0.23);
-
   font-family: inherit;
-
   font-size: 11px;
-
   font-weight: 800;
-
   cursor: pointer;
-
   transition:
     transform 0.28s ease,
     box-shadow 0.28s ease,
@@ -1191,20 +853,14 @@
 
 .resume-button::before {
   content: "";
-
   position: absolute;
-
   top: -130%;
   left: -35%;
-
   width: 35%;
   height: 360%;
-
   background:
     rgba(255, 255, 255, 0.27);
-
   transform: rotate(25deg);
-
   transition:
     left 0.7s
       cubic-bezier(0.22, 1, 0.36, 1);
@@ -1217,9 +873,7 @@
 .resume-button:hover {
   transform:
     translateY(-3px);
-
   filter: brightness(1.06);
-
   box-shadow:
     0 20px 42px
       rgba(82, 92, 222, 0.31);
@@ -1231,23 +885,17 @@
 
 .resume-button-icon {
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   width: 28px;
   height: 28px;
-
   border-radius: 9px;
-
   background:
     rgba(255, 255, 255, 0.13);
 }
 
 .resume-arrow {
   margin-left: auto;
-
   transition:
     transform 0.25s ease;
 }
@@ -1258,62 +906,36 @@
     translateX(5px);
 }
 
-
-/* ============================================================
-   BOTTOM
-   ============================================================ */
-
 .bottom-layout {
   display: grid;
-
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
-
   gap: 22px;
-
   margin-top: 22px;
 }
 
-
-/* ============================================================
-   SECURITY
-   ============================================================ */
-
 .security-card {
   display: flex;
-
   align-items: center;
-
   gap: 16px;
-
   min-height: 135px;
-
   padding: 24px 27px;
 }
 
 .security-icon {
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   width: 53px;
   height: 53px;
-
   flex-shrink: 0;
-
   border-radius: 17px;
-
   border:
     1px solid
     rgba(255, 255, 255, 0.7);
-
   color: #15966e;
-
   background:
     rgba(16, 185, 129, 0.1);
-
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
@@ -1324,7 +946,6 @@
   transform:
     rotate(-5deg)
     scale(1.08);
-
   box-shadow:
     0 11px 25px
       rgba(16, 185, 129, 0.12);
@@ -1336,113 +957,71 @@
 
 .security-text > span {
   display: block;
-
   margin-bottom: 4px;
-
   color: #909caf;
-
   font-size: 8px;
-
   font-weight: 850;
-
   letter-spacing: 1.2px;
 }
 
 .security-text h3 {
   margin: 0;
-
   color: #2b3955;
-
   font-size: 15px;
-
   font-weight: 800;
 }
 
 .security-text p {
   margin: 6px 0 0;
-
   color: #78869d;
-
   font-size: 10px;
-
   line-height: 1.55;
 }
 
 .security-badge {
   display: flex;
-
   align-items: center;
-
   gap: 5px;
-
   margin-left: auto;
-
   padding: 7px 9px;
-
   border-radius: 999px;
-
   color: #15946e;
-
   background:
     rgba(16, 185, 129, 0.065);
-
   font-size: 8px;
-
   font-weight: 800;
 }
 
-
-/* ============================================================
-   LOGOUT
-   ============================================================ */
-
 .logout-card {
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
   gap: 20px;
-
   min-height: 135px;
-
   padding: 24px 27px;
 }
 
 .logout-left {
   display: flex;
-
   align-items: center;
-
   gap: 15px;
-
   min-width: 0;
 }
 
 .logout-icon {
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   width: 53px;
   height: 53px;
-
   flex-shrink: 0;
-
   border-radius: 17px;
-
   border:
     1px solid
     rgba(255, 255, 255, 0.7);
-
   color: #e34662;
-
   background:
     rgba(239, 71, 111, 0.08);
-
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
@@ -1453,7 +1032,6 @@
   transform:
     rotate(5deg)
     scale(1.08);
-
   box-shadow:
     0 11px 25px
       rgba(239, 71, 111, 0.12);
@@ -1465,68 +1043,44 @@
 
 .logout-left span {
   display: block;
-
   margin-bottom: 4px;
-
   color: #909caf;
-
   font-size: 8px;
-
   font-weight: 850;
-
   letter-spacing: 1.2px;
 }
 
 .logout-left h3 {
   margin: 0;
-
   color: #2b3955;
-
   font-size: 15px;
-
   font-weight: 800;
 }
 
 .logout-left p {
   margin: 5px 0 0;
-
   color: #78869d;
-
   font-size: 10px;
 }
 
 .logout-button {
   display: inline-flex;
-
   align-items: center;
-
   justify-content: center;
-
   gap: 7px;
-
   min-width: 91px;
-
   padding: 11px 14px;
-
   border:
     1px solid
     rgba(239, 71, 111, 0.17);
-
   border-radius: 13px;
-
   color: #df405f;
-
   background:
     rgba(255, 255, 255, 0.38);
-
   font-family: inherit;
-
   font-size: 10px;
-
   font-weight: 800;
-
   cursor: pointer;
-
   transition:
     transform 0.25s ease,
     background 0.25s ease,
@@ -1536,10 +1090,8 @@
 .logout-button:hover {
   transform:
     translateY(-3px);
-
   background:
     rgba(239, 71, 111, 0.08);
-
   box-shadow:
     0 12px 27px
       rgba(239, 71, 111, 0.12);
@@ -1549,48 +1101,30 @@
   transform: scale(0.95);
 }
 
-
-/* ============================================================
-   LOADING / ERROR
-   ============================================================ */
-
 .profile-loading,
 .profile-error {
   position: relative;
-
   z-index: 5;
-
   min-height:
     calc(100vh - 100px);
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 }
 
 .loading-card,
 .error-card {
   width: min(430px, 92%);
-
   padding: 40px;
-
   text-align: center;
-
   border:
     1px solid
     rgba(255, 255, 255, 0.82);
-
   border-radius: 27px;
-
   background:
     rgba(255, 255, 255, 0.62);
-
-  backdrop-filter: blur(28px);
-
   -webkit-backdrop-filter: blur(28px);
-
+  backdrop-filter: blur(28px);
   box-shadow:
     0 30px 75px
       rgba(45, 60, 105, 0.1),
@@ -1600,22 +1134,16 @@
 .loading-logo,
 .error-icon {
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   width: 58px;
   height: 58px;
-
   margin: 0 auto 18px;
-
   border-radius: 18px;
 }
 
 .loading-logo {
   color: var(--primary);
-
   background:
     rgba(98, 87, 245, 0.09);
 }
@@ -1623,21 +1151,15 @@
 .loading-spinner {
   width: 33px;
   height: 33px;
-
   margin: 0 auto 18px;
-
   border:
     3px solid
     rgba(98, 87, 245, 0.09);
-
   border-top-color:
     var(--primary);
-
   border-right-color:
     var(--purple);
-
   border-radius: 50%;
-
   animation:
     spin
     0.75s
@@ -1647,93 +1169,65 @@
 
 .loading-card h3 {
   margin: 0;
-
   color: #293650;
-
   font-size: 18px;
 }
 
 .loading-card p {
   margin: 7px 0 0;
-
   color: #75839b;
-
   font-size: 11px;
 }
 
 .error-icon {
   color: var(--red);
-
   background:
     rgba(239, 71, 111, 0.08);
 }
 
 .eyebrow {
   display: block;
-
   margin-bottom: 7px;
-
   color: var(--primary);
-
   font-size: 8px;
-
   font-weight: 850;
-
   letter-spacing: 1.3px;
 }
 
 .error-card h2 {
   margin: 0;
-
   color: #293650;
-
   font-size: 20px;
 }
 
 .error-card p {
   margin: 9px 0 21px;
-
   color: #75839b;
-
   font-size: 12px;
-
   line-height: 1.6;
 }
 
 .error-card button {
   display: inline-flex;
-
   align-items: center;
-
   gap: 8px;
-
   padding: 11px 18px;
-
   border: none;
-
   border-radius: 13px;
-
   color: white;
-
   background:
     linear-gradient(
       135deg,
       #5967eb,
       #7655df
     );
-
   font-family: inherit;
-
   font-size: 11px;
-
   font-weight: 800;
-
   cursor: pointer;
-
   box-shadow:
     0 12px 28px
       rgba(82, 92, 222, 0.2);
-
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease;
@@ -1742,28 +1236,19 @@
 .error-card button:hover {
   transform:
     translateY(-3px);
-
   box-shadow:
     0 17px 35px
       rgba(82, 92, 222, 0.28);
 }
 
-
-/* ============================================================
-   ANIMATIONS
-   ============================================================ */
-
 @keyframes pageAppear {
   from {
     opacity: 0;
-
     transform:
       translateY(12px);
   }
-
   to {
     opacity: 1;
-
     transform:
       translateY(0);
   }
@@ -1772,14 +1257,11 @@
 @keyframes headerAppear {
   from {
     opacity: 0;
-
     transform:
       translateY(-15px);
   }
-
   to {
     opacity: 1;
-
     transform:
       translateY(0);
   }
@@ -1788,15 +1270,12 @@
 @keyframes contentAppear {
   from {
     opacity: 0;
-
     transform:
       translateY(24px)
       scale(0.985);
   }
-
   to {
     opacity: 1;
-
     transform:
       translateY(0)
       scale(1);
@@ -1810,7 +1289,6 @@
       translate3d(0, 0, 0)
       scale(1);
   }
-
   50% {
     transform:
       translate3d(28px, -25px, 0)
@@ -1825,7 +1303,6 @@
       translateY(0)
       scale(1);
   }
-
   50% {
     transform:
       translateY(-18px)
@@ -1840,7 +1317,6 @@
       rotate(0)
       scale(1);
   }
-
   50% {
     transform:
       rotate(9deg)
@@ -1852,14 +1328,11 @@
   0%,
   100% {
     opacity: 1;
-
     transform:
       scale(1);
   }
-
   50% {
     opacity: 0.5;
-
     transform:
       scale(0.8);
   }
@@ -1871,7 +1344,6 @@
     transform:
       translateY(0);
   }
-
   50% {
     transform:
       translateY(-6px);
@@ -1882,7 +1354,6 @@
   from {
     width: 0;
   }
-
   to {
     width: 20%;
   }
@@ -1892,7 +1363,6 @@
   0% {
     left: -60px;
   }
-
   55%,
   100% {
     left: 120%;
@@ -1906,25 +1376,14 @@
   }
 }
 
-
-/* ============================================================
-   RESPONSIVE — 1100px
-   ============================================================ */
-
 @media (max-width: 1100px) {
   .profile-layout {
     grid-template-columns: 1fr;
   }
-
   .resume-card {
-    min-height: auto;
+    min-height: 0;
   }
 }
-
-
-/* ============================================================
-   RESPONSIVE — 850px
-   ============================================================ */
 
 @media (max-width: 850px) {
   .default-profile-page {
@@ -1933,26 +1392,17 @@
       20px
       55px;
   }
-
   .profile-page-header {
     align-items: flex-start;
-
     flex-direction: column;
   }
-
   .header-action {
     width: fit-content;
   }
-
   .bottom-layout {
     grid-template-columns: 1fr;
   }
 }
-
-
-/* ============================================================
-   RESPONSIVE — 650px
-   ============================================================ */
 
 @media (max-width: 650px) {
   .default-profile-page {
@@ -1961,90 +1411,61 @@
       12px
       45px;
   }
-
   .profile-page-header {
     margin-bottom: 20px;
   }
-
   .header-left h1 {
     font-size: 34px;
-
     letter-spacing: -1.5px;
   }
-
   .header-left h1 span {
     display: block;
-
     margin-top: 5px;
-
     margin-left: 0;
   }
-
   .header-left p {
     font-size: 11px;
   }
-
   .details-card,
   .resume-card {
     padding: 23px 19px;
-
     border-radius: 24px;
   }
-
   .details-list {
     grid-template-columns: 1fr;
   }
-
   .card-status {
     display: none;
   }
-
   .security-card,
   .logout-card {
     padding: 21px;
-
     border-radius: 22px;
   }
-
   .security-badge {
     display: none;
   }
-
   .logout-card {
     align-items: flex-start;
-
     flex-direction: column;
   }
-
   .logout-button {
     width: 100%;
   }
 }
-
-
-/* ============================================================
-   RESPONSIVE — 420px
-   ============================================================ */
 
 @media (max-width: 420px) {
   .default-profile-page {
     padding-left: 9px;
     padding-right: 9px;
   }
-
   .header-left h1 {
     font-size: 30px;
   }
-
   .resume-card h3 {
     font-size: 20px;
   }
 }
-
-
-/* ============================================================
-   ACCESSIBILITY
-   ============================================================ */
 
 .default-profile-page button {
   -webkit-tap-highlight-color: transparent;
@@ -2054,14 +1475,8 @@
   outline:
     3px solid
     rgba(98, 87, 245, 0.23);
-
   outline-offset: 3px;
 }
-
-
-/* ============================================================
-   REDUCED MOTION
-   ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
   .default-profile-page *,
@@ -2069,10 +1484,8 @@
   .default-profile-page *::after {
     animation-duration:
       0.01ms !important;
-
     animation-iteration-count:
       1 !important;
-
     transition-duration:
       0.01ms !important;
   }
