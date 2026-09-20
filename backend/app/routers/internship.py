@@ -13,6 +13,7 @@ from app.database.connection import get_db
 
 from app.models import (
     Internship,
+    SavedInternship,
     Resume,
     ResumeProfile,
     User,
@@ -731,6 +732,208 @@ def get_matched_internships(
 # - match_percentage = 0
 #
 # =========================================================
+
+
+# =========================================================
+# SAVED INTERNSHIPS
+# =========================================================
+# IMPORTANT:
+#
+# These static /saved routes MUST be registered before the
+# dynamic /{internship_id} route below.
+# Otherwise FastAPI can match "saved" against internship_id:int
+# and return HTTP 422: Input should be a valid integer.
+# =========================================================
+
+@router.get("/saved")
+def get_saved_internships(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
+):
+
+    if current_user.role != "intern":
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only interns can view saved internships",
+        )
+
+    rows = (
+        db.query(
+            SavedInternship,
+            Internship,
+        )
+        .join(
+            Internship,
+            SavedInternship.internship_id
+            == Internship.id,
+        )
+        .filter(
+            SavedInternship.user_id
+            == current_user.id
+        )
+        .order_by(
+            SavedInternship.saved_at.desc()
+        )
+        .all()
+    )
+
+    internships = []
+
+    for saved, internship in rows:
+
+        internships.append(
+            {
+                "saved_id": saved.id,
+                "saved_internship_id": saved.id,
+                "saved_at": (
+                    saved.saved_at.isoformat()
+                    if saved.saved_at
+                    else None
+                ),
+                "id": internship.id,
+                "internship_id": internship.id,
+                "title": internship.title,
+                "company_name": internship.company_name,
+                "location": internship.location,
+                "duration": internship.duration,
+                "work_mode": internship.work_mode,
+                "stipend": internship.stipend,
+                "start_date": (
+                    internship.start_date.isoformat()
+                    if internship.start_date
+                    else None
+                ),
+                "required_skills": internship.required_skills or [],
+                "description": internship.description,
+                "eligibility": internship.eligibility,
+                "responsibilities": internship.responsibilities,
+                "benefits": internship.benefits,
+                "application_url": internship.application_url,
+            }
+        )
+
+    return {
+        "total_saved": len(internships),
+        "internships": internships,
+    }
+
+
+@router.post("/{internship_id}/save")
+def save_internship(
+    internship_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
+):
+
+    if current_user.role != "intern":
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only interns can save internships",
+        )
+
+    internship = (
+        db.query(Internship)
+        .filter(
+            Internship.id == internship_id
+        )
+        .first()
+    )
+
+    if not internship:
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Internship not found",
+        )
+
+    existing = (
+        db.query(SavedInternship)
+        .filter(
+            SavedInternship.user_id
+            == current_user.id,
+            SavedInternship.internship_id
+            == internship_id,
+        )
+        .first()
+    )
+
+    # Idempotent save: a second click does not create an error.
+    if existing:
+
+        return {
+            "message": "Internship is already saved",
+            "saved": True,
+            "saved_id": existing.id,
+            "internship_id": internship.id,
+        }
+
+    saved = SavedInternship(
+        user_id=current_user.id,
+        internship_id=internship.id,
+    )
+
+    db.add(saved)
+    db.commit()
+    db.refresh(saved)
+
+    return {
+        "message": "Internship saved successfully",
+        "saved": True,
+        "saved_id": saved.id,
+        "internship_id": internship.id,
+    }
+
+
+@router.delete("/{internship_id}/save")
+def remove_saved_internship(
+    internship_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        get_current_user
+    ),
+):
+
+    if current_user.role != "intern":
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only interns can remove saved internships",
+        )
+
+    saved = (
+        db.query(SavedInternship)
+        .filter(
+            SavedInternship.user_id
+            == current_user.id,
+            SavedInternship.internship_id
+            == internship_id,
+        )
+        .first()
+    )
+
+    if not saved:
+
+        return {
+            "message": "Internship is not saved",
+            "saved": False,
+            "internship_id": internship_id,
+        }
+
+    db.delete(saved)
+    db.commit()
+
+    return {
+        "message": "Internship removed from saved internships",
+        "saved": False,
+        "internship_id": internship_id,
+    }
+
 
 @router.get("/{internship_id}")
 def get_internship_details(

@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   BriefcaseBusiness,
-  Building2,
-  CalendarDays,
   Check,
   ChevronDown,
   Clock3,
@@ -21,27 +19,11 @@ import {
 
 import "../styles/Internships.css";
 
-/*
-|--------------------------------------------------------------------------
-| BACKEND
-|--------------------------------------------------------------------------
-|
-| Your working FastAPI endpoint:
-|
-| GET /api/internships/matched?min_match=30
-|
-*/
-
 const API_BASE = "http://127.0.0.1:8000";
 
 const ALL_INTERNSHIPS_URL = `${API_BASE}/api/internships/all`;
 const MATCHED_INTERNSHIPS_URL = `${API_BASE}/api/internships/matched?min_match=30`;
-
-/*
-|--------------------------------------------------------------------------
-| AUTH TOKEN
-|--------------------------------------------------------------------------
-*/
+const SAVED_INTERNSHIPS_URL = `${API_BASE}/api/internships/saved`;
 
 function handleInvalidAuthentication() {
   localStorage.removeItem("access_token");
@@ -61,12 +43,6 @@ function getAuthToken() {
     ""
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| SKILL NORMALIZER
-|--------------------------------------------------------------------------
-*/
 
 function normalizeSkills(value) {
   if (Array.isArray(value)) {
@@ -96,25 +72,6 @@ function normalizeSkills(value) {
     .map((item) => item.trim())
     .filter(Boolean);
 }
-
-/*
-|--------------------------------------------------------------------------
-| INTERNSHIP NORMALIZER
-|--------------------------------------------------------------------------
-|
-| Your backend returns fields such as:
-|
-| id
-| company_name
-| title
-| location
-| duration
-| work_mode
-| stipend
-| start_date
-| match_percentage
-|
-*/
 
 function normalizeInternship(item, index) {
   const matchedSkills = normalizeSkills(
@@ -210,36 +167,6 @@ function normalizeInternship(item, index) {
   };
 }
 
-/*
-|--------------------------------------------------------------------------
-| PROFILE STORAGE
-|--------------------------------------------------------------------------
-*/
-
-function getStoredProfile() {
-  try {
-    const raw =
-      localStorage.getItem("profile") || localStorage.getItem("userProfile");
-
-    if (!raw) {
-      return null;
-    }
-
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-/*
- * --------------------------------------------------------------------------
- * | DEFAULT USER / RESUME-ANALYZED USER
- * --------------------------------------------------------------------------
- *
- * Default users can browse all internships without a resume.
- * Resume-analyzed users continue using personalized matching.
- */
-
 function getInternshipAccessMode() {
   const dashboardType = String(
     localStorage.getItem("dashboard_type") || "",
@@ -260,11 +187,71 @@ function getInternshipAccessMode() {
   };
 }
 
-/*
-|--------------------------------------------------------------------------
-| INTERNSHIPS PAGE
-|--------------------------------------------------------------------------
-*/
+async function fetchInternshipAccessMode(token) {
+  const fallback = getInternshipAccessMode();
+
+  if (!token) {
+    return fallback;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/api/dashboard`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const responseText = await response.text();
+    let data = null;
+
+    try {
+      data = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      data = null;
+    }
+
+    if (response.status === 401) {
+      handleInvalidAuthentication();
+      return fallback;
+    }
+
+    if (!response.ok) {
+      console.warn(
+        "Unable to verify dashboard/resume status:",
+        response.status,
+        data,
+      );
+      return fallback;
+    }
+
+    const dashboardType = String(
+      data?.dashboard_type || "default",
+    ).toLowerCase();
+
+    const resumeAnalyzed =
+      data?.has_analyzed_resume === true ||
+      data?.resume_analyzed === true ||
+      data?.resumeAnalyzed === true ||
+      data?.has_user_data === true;
+
+    const isDefaultUser = dashboardType !== "user";
+
+    localStorage.setItem("dashboard_type", dashboardType);
+    localStorage.setItem("resume_analyzed", String(resumeAnalyzed));
+
+    return {
+      dashboardType,
+      resumeAnalyzed,
+      isDefaultUser,
+      useAllInternshipsApi: !resumeAnalyzed,
+    };
+  } catch (error) {
+    console.warn("Dashboard status request failed:", error);
+    return fallback;
+  }
+}
 
 function Internships() {
   const navigate = useNavigate();
@@ -294,47 +281,11 @@ function Internships() {
 
   const [showFilters, setShowFilters] = useState(false);
 
-  const [savedIds, setSavedIds] = useState(() => {
-    /*
-     * Default users can browse internships, but saved internships
-     * remain unavailable until the resume has been analyzed.
-     */
-    const accessMode = getInternshipAccessMode();
-
-    if (accessMode.isDefaultUser && !accessMode.resumeAnalyzed) {
-      return new Set();
-    }
-
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem("savedInternships") || "[]",
-      );
-
-      return new Set(
-        Array.isArray(saved)
-          ? saved.map((item) =>
-              String(
-                item && typeof item === "object"
-                  ? (item.id ?? item.internship_id ?? item.internshipId)
-                  : item,
-              ),
-            )
-          : [],
-      );
-    } catch {
-      return new Set();
-    }
-  });
+  const [savedIds, setSavedIds] = useState(new Set());
 
   const [accessError, setAccessError] = useState("");
 
-  const [profile] = useState(getStoredProfile());
-
-  /*
-  |--------------------------------------------------------------------------
-  | LOAD INTERNSHIPS
-  |--------------------------------------------------------------------------
-  */
+  const [accessErrorType, setAccessErrorType] = useState("");
 
   const loadInternships = useCallback(async (isRefresh = false) => {
     try {
@@ -352,20 +303,8 @@ function Internships() {
         throw new Error("Authentication token not found. Please login again.");
       }
 
-      /*
-       * =========================================================
-       * CHOOSE THE CORRECT INTERNSHIP API
-       * =========================================================
-       *
-       * Default users:
-       *   /api/internships/all
-       *
-       * Resume-analyzed users:
-       *   /api/internships/matched?min_match=30
-       */
-
       const { dashboardType, resumeAnalyzed, useAllInternshipsApi } =
-        getInternshipAccessMode();
+        await fetchInternshipAccessMode(token);
 
       const internshipUrl = useAllInternshipsApi
         ? ALL_INTERNSHIPS_URL
@@ -441,24 +380,6 @@ function Internships() {
 
       console.log("REAL INTERNSHIP API DATA:", data);
 
-      /*
-        | Backend responses supported here:
-        |
-        | Default user:
-        | {
-        |   message: "All internships retrieved successfully",
-        |   total_internships: 250,
-        |   internships: [...]
-        | }
-        |
-        | Resume-analyzed user:
-        | {
-        |   profile_id: 4,
-        |   total_internships: 116,
-        |   internships: [...]
-        | }
-        */
-
       const list = Array.isArray(data?.internships)
         ? data.internships
         : Array.isArray(data?.matches)
@@ -475,52 +396,60 @@ function Internships() {
 
       setInternships(normalized);
 
-      /*
-       * Keep existing saved internship IDs compatible
-       * while storing complete internship objects.
-       */
       try {
-        if (useAllInternshipsApi) {
-          /*
-           * Clear only the in-memory saved state for a default user.
-           * Existing storage is preserved so it is available again
-           * after resume analysis.
-           */
+        const savedResponse = await fetch(SAVED_INTERNSHIPS_URL, {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (savedResponse.status === 401) {
+          setSavedIds(new Set());
+          setApiError("Your login session has expired. Please login again.");
+          handleInvalidAuthentication();
+          return;
+        }
+
+        if (!savedResponse.ok) {
+          console.warn(
+            "Unable to load saved internships:",
+            savedResponse.status,
+          );
           setSavedIds(new Set());
         } else {
-          const storedSaved = JSON.parse(
-            localStorage.getItem("savedInternships") || "[]",
-          );
+          const savedText = await savedResponse.text();
+          let savedData = null;
 
-          if (Array.isArray(storedSaved) && storedSaved.length > 0) {
-            const migratedSaved = storedSaved
-              .map((item) => {
-                if (item && typeof item === "object") {
-                  return item;
-                }
-
-                const savedId = String(item);
-
-                return (
-                  normalized.find(
-                    (internship) => String(internship.id) === savedId,
-                  ) || null
-                );
-              })
-              .filter(Boolean);
-
-            localStorage.setItem(
-              "savedInternships",
-              JSON.stringify(migratedSaved),
-            );
-
-            setSavedIds(new Set(migratedSaved.map((item) => String(item.id))));
-
-            window.dispatchEvent(new Event("savedInternshipsChanged"));
+          try {
+            savedData = savedText ? JSON.parse(savedText) : null;
+          } catch {
+            savedData = null;
           }
+
+          const backendSaved = Array.isArray(savedData?.internships)
+            ? savedData.internships
+            : [];
+
+          setSavedIds(
+            new Set(
+              backendSaved
+                .map((item) =>
+                  String(
+                    item?.internship_id ??
+                      item?.id ??
+                      item?.internshipId ??
+                      "",
+                  ),
+                )
+                .filter(Boolean),
+            ),
+          );
         }
-      } catch {
-        /* Ignore invalid saved internship storage. */
+      } catch (savedError) {
+        console.warn("Saved internship API unavailable.", savedError);
+        setSavedIds(new Set());
       }
     } catch (error) {
       console.error("Internship API error:", error);
@@ -536,12 +465,6 @@ function Internships() {
     }
   }, []);
 
-  /*
-  |--------------------------------------------------------------------------
-  | REFRESH INTERNSHIPS
-  |--------------------------------------------------------------------------
-  */
-
   const handleRefresh = useCallback(() => {
     if (refreshing) {
       return;
@@ -550,21 +473,9 @@ function Internships() {
     loadInternships(true);
   }, [loadInternships, refreshing]);
 
-  /*
-  |--------------------------------------------------------------------------
-  | INITIAL LOAD
-  |--------------------------------------------------------------------------
-  */
-
   useEffect(() => {
     loadInternships(false);
   }, [loadInternships]);
-
-  /*
-  |--------------------------------------------------------------------------
-  | AUTO REFRESH WHEN PAGE BECOMES ACTIVE
-  |--------------------------------------------------------------------------
-  */
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -580,84 +491,126 @@ function Internships() {
     };
   }, [loadInternships]);
 
-  /*
-  |--------------------------------------------------------------------------
-  | SAVE INTERNSHIP
-  |--------------------------------------------------------------------------
-  */
+  const toggleSave = useCallback(
+    async (internship) => {
+      const token = getAuthToken();
 
-  const toggleSave = useCallback((internship) => {
-    /*
-     * Default users can see internship cards, but saving is
-     * available only after the resume has been analyzed.
-     */
-    const accessMode = getInternshipAccessMode();
+      if (!token) {
+        setAccessErrorType("general");
+        setAccessError("Your login session has expired. Please login again.");
+        return;
+      }
 
-    if (accessMode.isDefaultUser && !accessMode.resumeAnalyzed) {
-      setAccessError(
-        "Please upload and analyze your resume before saving internships.",
-      );
-      return;
-    }
+      const accessMode = await fetchInternshipAccessMode(token);
 
-    const id = String(internship?.id);
+      if (!accessMode.resumeAnalyzed) {
+        setAccessErrorType("resume");
+        setAccessError(
+          "Please upload and analyze your resume before saving internships.",
+        );
+        return;
+      }
 
-    setSavedIds((previous) => {
-      const next = new Set(previous);
+      const id = String(internship?.id || "").trim();
 
-      let savedList = [];
+      if (!id) {
+        setAccessErrorType("general");
+        setAccessError(
+          "This internship does not have a valid database ID. Please refresh the internship list.",
+        );
+        return;
+      }
+
+      const isCurrentlySaved = savedIds.has(id);
+      const method = isCurrentlySaved ? "DELETE" : "POST";
+      const url = `${API_BASE}/api/internships/${encodeURIComponent(id)}/save`;
 
       try {
-        const stored = JSON.parse(
-          localStorage.getItem("savedInternships") || "[]",
-        );
+        setAccessError("");
+        setAccessErrorType("");
 
-        if (Array.isArray(stored)) {
-          savedList = stored;
+        const response = await fetch(url, {
+          method,
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const responseText = await response.text();
+
+        let responseData = null;
+
+        try {
+          responseData = responseText ? JSON.parse(responseText) : null;
+        } catch {
+          responseData = null;
         }
-      } catch {
-        savedList = [];
-      }
 
-      const existingIds = savedList.map((item) =>
-        String(
-          item && typeof item === "object"
-            ? (item.id ?? item.internship_id ?? item.internshipId)
-            : item,
-        ),
-      );
-
-      if (next.has(id)) {
-        next.delete(id);
-        savedList = savedList.filter(
-          (item) =>
-            String(
-              item && typeof item === "object"
-                ? (item.id ?? item.internship_id ?? item.internshipId)
-                : item,
-            ) !== id,
-        );
-      } else {
-        next.add(id);
-
-        if (!existingIds.includes(id)) {
-          savedList.push(internship);
+        if (response.status === 401) {
+          setAccessError(
+            "Your login session has expired. Please login again.",
+          );
+          handleInvalidAuthentication();
+          return;
         }
+
+        if (!response.ok) {
+          const backendMessage =
+            typeof responseData?.detail === "string"
+              ? responseData.detail
+              : Array.isArray(responseData?.detail)
+                ? responseData.detail
+                    .map((item) => item?.msg || item?.message || "")
+                    .filter(Boolean)
+                    .join(", ")
+                : responseData?.message ||
+                  responseData?.error ||
+                  `Unable to ${isCurrentlySaved ? "remove" : "save"} internship.`;
+
+          const alreadySaved =
+            !isCurrentlySaved &&
+            /already\s+(saved|exists)|already.*save/i.test(backendMessage);
+
+          if (alreadySaved) {
+            setSavedIds((previous) => {
+              const next = new Set(previous);
+              next.add(id);
+              return next;
+            });
+            setAccessErrorType("general");
+            setAccessError("Internship is already saved.");
+            return;
+          }
+
+          throw new Error(backendMessage);
+        }
+
+        setSavedIds((previous) => {
+          const next = new Set(previous);
+
+          if (isCurrentlySaved) {
+            next.delete(id);
+          } else {
+            next.add(id);
+          }
+
+          return next;
+        });
+
+        window.dispatchEvent(new Event("savedInternshipsChanged"));
+        setAccessError("");
+      } catch (error) {
+        console.error("Save internship error:", error);
+
+        setAccessErrorType("general");
+        setAccessError(
+          error?.message || "Unable to update saved internship.",
+        );
       }
-
-      localStorage.setItem("savedInternships", JSON.stringify(savedList));
-
-      window.dispatchEvent(new Event("savedInternshipsChanged"));
-
-      return next;
-    });
-  }, []);
-
-  /*
-  |--------------------------------------------------------------------------
-  | FILTER OPTIONS
-  |--------------------------------------------------------------------------
-  */
+    },
+    [savedIds],
+  );
 
   const locations = useMemo(() => {
     const values = internships.map((item) => item.location).filter(Boolean);
@@ -682,12 +635,6 @@ function Internships() {
 
     return ["All categories", ...Array.from(new Set(values)).sort()];
   }, [internships]);
-
-  /*
-  |--------------------------------------------------------------------------
-  | FILTER + SEARCH + SORT
-  |--------------------------------------------------------------------------
-  */
 
   const filteredInternships = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -793,12 +740,6 @@ function Internships() {
     sortBy,
   ]);
 
-  /*
-  |--------------------------------------------------------------------------
-  | RESET FILTERS
-  |--------------------------------------------------------------------------
-  */
-
   const resetFilters = () => {
     setSearchQuery("");
     setLocationFilter("All locations");
@@ -809,18 +750,7 @@ function Internships() {
     setSortBy("Best Match");
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | DETAILS
-  |--------------------------------------------------------------------------
-  */
-
   const openDetails = (internship) => {
-    /*
-     * Default users can browse the internship list, but the
-     * complete internship details are unlocked only after
-     * resume analysis.
-     */
     const accessMode = getInternshipAccessMode();
 
     if (accessMode.isDefaultUser && !accessMode.resumeAnalyzed) {
@@ -870,17 +800,7 @@ function Internships() {
     });
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | EXTERNAL APPLICATION
-  |--------------------------------------------------------------------------
-  */
-
   const openExternalApplication = (internship) => {
-    /*
-     * Default users can browse internship opportunities, but
-     * applying is unlocked only after resume analysis.
-     */
     const accessMode = getInternshipAccessMode();
 
     if (accessMode.isDefaultUser && !accessMode.resumeAnalyzed) {
@@ -899,23 +819,6 @@ function Internships() {
     window.open(internship.sourceUrl, "_blank", "noopener,noreferrer");
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | PROFILE SKILLS
-  |--------------------------------------------------------------------------
-  */
-
-  const profileTechnicalSkills = normalizeSkills(
-    profile?.technical_skills ?? profile?.technicalSkills,
-  );
-
-  const profileSkills = normalizeSkills(profile?.skills);
-
-  /*
-  |--------------------------------------------------------------------------
-  | MATCH SCORE COLOR
-  |--------------------------------------------------------------------------
-  */
 
   const getMatchClass = (percentage) => {
     if (percentage >= 80) {
@@ -928,12 +831,6 @@ function Internships() {
 
     return "match-low";
   };
-
-  /*
-  |--------------------------------------------------------------------------
-  | LOADING
-  |--------------------------------------------------------------------------
-  */
 
   if (loading) {
     return (
@@ -963,18 +860,8 @@ function Internships() {
     );
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | PAGE
-  |--------------------------------------------------------------------------
-  */
-
   return (
     <div className="internships-page">
-      {/* ================================================================
-          HERO
-      ================================================================ */}
-
       <section className="internships-hero">
         <div className="hero-glow hero-glow-one" />
         <div className="hero-glow hero-glow-two" />
@@ -1050,10 +937,6 @@ function Internships() {
         </div>
       </section>
 
-      {/* ================================================================
-          SEARCH
-      ================================================================ */}
-
       <section className="internships-controls">
         <div className="search-wrapper">
           <Search size={20} />
@@ -1096,10 +979,6 @@ function Internships() {
           Refresh
         </button>
       </section>
-
-      {/* ================================================================
-          FILTERS
-      ================================================================ */}
 
       {showFilters && (
         <section className="filter-panel">
@@ -1209,10 +1088,6 @@ function Internships() {
         </section>
       )}
 
-      {/* ================================================================
-          ERROR
-      ================================================================ */}
-
       {apiError && (
         <section className="internship-error">
           <div className="error-icon">!</div>
@@ -1229,37 +1104,38 @@ function Internships() {
         </section>
       )}
 
-      {/* ================================================================
-          ACCESS ERROR
-          ================================================================ */}
-
       {accessError && (
         <section className="internship-error">
           <div className="error-icon">!</div>
 
           <div>
-            <strong>Resume analysis required</strong>
+            <strong>
+              {accessErrorType === "resume"
+                ? "Resume analysis required"
+                : "Saved internship update"}
+            </strong>
 
             <p>{accessError}</p>
 
-            <button type="button" onClick={() => navigate("/resume")}>
-              Upload &amp; Analyze Resume
-            </button>
+            {accessErrorType === "resume" && (
+              <button type="button" onClick={() => navigate("/resume")}>
+                Upload &amp; Analyze Resume
+              </button>
+            )}
           </div>
 
           <button
             type="button"
-            onClick={() => setAccessError("")}
+            onClick={() => {
+              setAccessError("");
+              setAccessErrorType("");
+            }}
             aria-label="Close access error"
           >
             <X size={18} />
           </button>
         </section>
       )}
-
-      {/* ================================================================
-          RESULTS HEADER
-      ================================================================ */}
 
       {!apiError && (
         <section className="results-header">
@@ -1286,10 +1162,6 @@ function Internships() {
         </section>
       )}
 
-      {/* ================================================================
-          EMPTY STATE
-      ================================================================ */}
-
       {!apiError && filteredInternships.length === 0 && (
         <section className="empty-state">
           <div className="empty-icon">
@@ -1305,10 +1177,6 @@ function Internships() {
           </button>
         </section>
       )}
-
-      {/* ================================================================
-          INTERNSHIP GRID
-      ================================================================ */}
 
       {!apiError && filteredInternships.length > 0 && (
         <section className="internship-grid">

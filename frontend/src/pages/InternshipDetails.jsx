@@ -760,34 +760,48 @@ function InternshipDetails() {
              SAVED STATE
           =============================================== */
 
-        const savedList = localStorage.getItem("savedInternships");
-
         let isSaved = false;
 
-        if (savedList) {
+        if (!isDefaultUserWithoutResume()) {
+          const savedUrl = `${API_BASE_URL}/api/internships/saved`;
+
+          const savedResponse = await fetch(savedUrl, {
+            method: "GET",
+            headers,
+          });
+
+          const savedText = await savedResponse.text();
+
+          let savedJson = null;
+
           try {
-            const parsed = JSON.parse(savedList);
-
-            if (Array.isArray(parsed)) {
-              isSaved = parsed.some((item) => {
-                const itemId =
-                  item && typeof item === "object"
-                    ? (item.id ?? item.internship_id ?? item.internshipId)
-                    : item;
-
-                return String(itemId) === String(internshipId);
-              });
-            }
+            savedJson = savedText ? JSON.parse(savedText) : null;
           } catch {
-            /* ignore invalid local storage */
+            savedJson = null;
+          }
+
+          if (savedResponse.status === 401) {
+            setSaved(false);
+            throw new Error("Your login session has expired. Please login again.");
+          }
+
+          if (savedResponse.ok) {
+            const savedList = Array.isArray(savedJson?.internships)
+              ? savedJson.internships
+              : [];
+
+            isSaved = savedList.some((item) => {
+              const itemId =
+                item && typeof item === "object"
+                  ? (item.id ?? item.internship_id ?? item.internshipId)
+                  : item;
+
+              return String(itemId) === String(internshipId);
+            });
           }
         }
 
-        /*
-         * Never show a saved state to a default user who
-         * has not analyzed a resume.
-         */
-        setSaved(isDefaultUserWithoutResume() ? false : isSaved);
+        setSaved(isSaved);
 
         checkCoverLetterState();
       } catch (requestError) {
@@ -819,16 +833,76 @@ function InternshipDetails() {
       checkCoverLetterState();
     };
 
-    window.addEventListener("focus", refreshCoverLetterState);
+    const refreshSavedState = async () => {
+      if (!internshipId || isDefaultUserWithoutResume()) {
+        setSaved(false);
+        return;
+      }
 
+      const token = getAuthToken();
+
+      if (!token) {
+        setSaved(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/internships/saved`,
+          {
+            method: "GET",
+            headers: buildHeaders(),
+          },
+        );
+
+        if (response.status === 401) {
+          setSaved(false);
+          return;
+        }
+
+        if (!response.ok) {
+          return;
+        }
+
+        const responseText = await response.text();
+
+        let responseData = null;
+
+        try {
+          responseData = responseText ? JSON.parse(responseText) : null;
+        } catch {
+          responseData = null;
+        }
+
+        const savedList = Array.isArray(responseData?.internships)
+          ? responseData.internships
+          : [];
+
+        const isSaved = savedList.some((item) => {
+          const itemId =
+            item && typeof item === "object"
+              ? (item.id ?? item.internship_id ?? item.internshipId)
+              : item;
+
+          return String(itemId) === String(internshipId);
+        });
+
+        setSaved(isSaved);
+      } catch (error) {
+        console.warn("Unable to refresh saved internship state:", error);
+      }
+    };
+
+    window.addEventListener("focus", refreshCoverLetterState);
     window.addEventListener("storage", refreshCoverLetterState);
+    window.addEventListener("savedInternshipsChanged", refreshSavedState);
 
     return () => {
       window.removeEventListener("focus", refreshCoverLetterState);
-
       window.removeEventListener("storage", refreshCoverLetterState);
+      window.removeEventListener("savedInternshipsChanged", refreshSavedState);
     };
-  }, [checkCoverLetterState]);
+  }, [checkCoverLetterState, internshipId]);
 
   /* =======================================================
      NORMALIZED DISPLAY DATA
@@ -1083,10 +1157,6 @@ function InternshipDetails() {
   ======================================================= */
 
   const handleSave = async () => {
-    /*
-     * Default users can browse the internship list, but
-     * saving is available only after resume analysis.
-     */
     if (isDefaultUserWithoutResume()) {
       setError(
         "Please upload and analyze your resume before saving internships.",
@@ -1108,7 +1178,6 @@ function InternshipDetails() {
 
       if (!token) {
         setError("Your login session has expired. Please login again.");
-
         return;
       }
 
@@ -1131,62 +1200,26 @@ function InternshipDetails() {
         result = null;
       }
 
-      /*
-       * If the internship is already saved in the backend but
-       * localStorage is out of sync, the backend can return an
-       * "already saved" error. Treat that state as saved and
-       * synchronize localStorage instead of showing an error.
-       */
+      if (response.status === 401) {
+        setError("Your login session has expired. Please login again.");
+        return;
+      }
+
       if (!response.ok) {
         const backendMessage =
           result?.detail || result?.message || result?.error || text || "";
 
         const normalizedMessage = String(backendMessage).toLowerCase();
 
-        const alreadySaved =
+        if (
           !saved &&
           (normalizedMessage.includes("already saved") ||
             normalizedMessage.includes("internship is already saved") ||
-            normalizedMessage.includes("already exists"));
-
-        if (alreadySaved) {
+            normalizedMessage.includes("already exists"))
+        ) {
           setSaved(true);
-
-          let savedList = [];
-
-          try {
-            const stored = JSON.parse(
-              localStorage.getItem("savedInternships") || "[]",
-            );
-
-            if (Array.isArray(stored)) {
-              savedList = stored;
-            }
-          } catch {
-            savedList = [];
-          }
-
-          const currentId = String(internshipId);
-
-          const alreadyExists = savedList.some((item) => {
-            const itemId =
-              item && typeof item === "object"
-                ? (item.id ?? item.internship_id ?? item.internshipId)
-                : item;
-
-            return String(itemId) === currentId;
-          });
-
-          if (!alreadyExists && internship && typeof internship === "object") {
-            savedList.push(internship);
-          }
-
-          localStorage.setItem("savedInternships", JSON.stringify(savedList));
-
+          setMessage("Internship is already saved.");
           window.dispatchEvent(new Event("savedInternshipsChanged"));
-
-          setMessage("Internship saved successfully.");
-
           return;
         }
 
@@ -1201,48 +1234,6 @@ function InternshipDetails() {
       const newSaved = !saved;
 
       setSaved(newSaved);
-
-      let savedList = [];
-
-      try {
-        const stored = JSON.parse(
-          localStorage.getItem("savedInternships") || "[]",
-        );
-
-        if (Array.isArray(stored)) {
-          savedList = stored;
-        }
-      } catch {
-        savedList = [];
-      }
-
-      const currentId = String(internshipId);
-
-      if (newSaved) {
-        const alreadySaved = savedList.some((item) => {
-          const itemId =
-            item && typeof item === "object"
-              ? (item.id ?? item.internship_id ?? item.internshipId)
-              : item;
-
-          return String(itemId) === currentId;
-        });
-
-        if (!alreadySaved) {
-          savedList.push(internship);
-        }
-      } else {
-        savedList = savedList.filter((item) => {
-          const itemId =
-            item && typeof item === "object"
-              ? (item.id ?? item.internship_id ?? item.internshipId)
-              : item;
-
-          return String(itemId) !== currentId;
-        });
-      }
-
-      localStorage.setItem("savedInternships", JSON.stringify(savedList));
 
       window.dispatchEvent(new Event("savedInternshipsChanged"));
 

@@ -90,8 +90,16 @@ class User(Base):
         default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
+    # Existing relationship
     resumes = relationship(
         "Resume",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    # Saved internships relationship
+    saved_internships = relationship(
+        "SavedInternship",
         back_populates="user",
         cascade="all, delete-orphan",
     )

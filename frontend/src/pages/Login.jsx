@@ -142,10 +142,16 @@ function Login() {
 
       localStorage.setItem("access_token", authToken);
 
-      // Keep this if other parts of your application
-      // currently use "token".
-
       localStorage.setItem("token", authToken);
+
+      window.dispatchEvent(
+        new CustomEvent("internmatch-auth-changed", {
+          detail: {
+            token: authToken,
+            email: formData.email.trim(),
+          },
+        })
+      );
 
       // =====================================================
       // STEP 6
@@ -290,6 +296,15 @@ function Login() {
 
       if (currentUser) {
         localStorage.setItem("user", JSON.stringify(currentUser));
+
+        window.dispatchEvent(
+          new CustomEvent("internmatch-auth-changed", {
+            detail: {
+              token: authToken,
+              user: currentUser,
+            },
+          })
+        );
       }
 
       // -----------------------------------------------------
@@ -324,13 +339,6 @@ function Login() {
       localStorage.removeItem("user_role");
 
       // =====================================================
-
-      /*
-       * Remove any previous role value when another normal
-       * user logs in from the same browser.
-       */
-
-      localStorage.removeItem("user_role");
 
       /*
        * Existing backend dashboard response:
@@ -445,6 +453,16 @@ function Login() {
       localStorage.removeItem("resume_profile_id");
 
       localStorage.removeItem("user_role");
+      localStorage.removeItem("dashboard_type");
+
+      window.dispatchEvent(
+        new CustomEvent("internmatch-auth-changed", {
+          detail: {
+            token: null,
+            user: null,
+          },
+        })
+      );
 
       // =====================================================
       // SHOW ERROR

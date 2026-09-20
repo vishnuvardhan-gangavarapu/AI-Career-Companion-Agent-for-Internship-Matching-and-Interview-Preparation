@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import {
   Bookmark,
@@ -17,29 +17,63 @@ import { useNavigate } from "react-router-dom";
 
 import "../styles/SavedInternships.css";
 
-/* =========================================================
-   STORAGE KEY
-========================================================= */
+const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-const SAVED_INTERNSHIPS_KEY = "savedInternships";
+const SAVED_INTERNSHIPS_URL = `${API_BASE}/api/internships/saved`;
 
-/* =========================================================
-   HELPER - GET INTERNSHIP ID
-========================================================= */
+function getAuthToken() {
+  const keys = ["access_token", "accessToken", "token", "authToken", "jwt"];
+
+  for (const key of keys) {
+    const value = localStorage.getItem(key);
+
+    if (value) {
+      return value.startsWith("Bearer ") ? value.substring(7) : value;
+    }
+  }
+
+  return "";
+}
+
+function clearAuthAndRedirect() {
+  localStorage.removeItem("access_token");
+
+  localStorage.removeItem("accessToken");
+
+  localStorage.removeItem("token");
+
+  localStorage.removeItem("authToken");
+
+  localStorage.removeItem("jwt");
+
+  window.location.href = "/login";
+}
 
 const getInternshipId = (internship) => {
-  if (!internship) {
+  if (!internship || typeof internship !== "object") {
     return null;
   }
 
-  return (
-    internship.id ?? internship.internship_id ?? internship.internshipId ?? null
-  );
-};
+  const nested =
+    internship.internship && typeof internship.internship === "object"
+      ? internship.internship
+      : null;
 
-/* =========================================================
-   HELPER - GET INTERNSHIP TITLE
-========================================================= */
+  const value =
+    internship.internship_id ??
+    internship.internshipId ??
+    internship.id ??
+    nested?.internship_id ??
+    nested?.internshipId ??
+    nested?.id ??
+    null;
+
+  const numberValue = Number(value);
+
+  return Number.isInteger(numberValue) && numberValue > 0
+    ? numberValue
+    : null;
+};
 
 const getInternshipTitle = (internship) => {
   return (
@@ -51,10 +85,6 @@ const getInternshipTitle = (internship) => {
   );
 };
 
-/* =========================================================
-   HELPER - GET COMPANY
-========================================================= */
-
 const getCompanyName = (internship) => {
   return (
     internship?.company_name ||
@@ -64,19 +94,11 @@ const getCompanyName = (internship) => {
   );
 };
 
-/* =========================================================
-   HELPER - GET LOCATION
-========================================================= */
-
 const getLocation = (internship) => {
   return (
     internship?.location || internship?.city || internship?.job_location || ""
   );
 };
-
-/* =========================================================
-   HELPER - GET DURATION
-========================================================= */
 
 const getDuration = (internship) => {
   return (
@@ -87,19 +109,11 @@ const getDuration = (internship) => {
   );
 };
 
-/* =========================================================
-   HELPER - GET WORK MODE
-========================================================= */
-
 const getWorkMode = (internship) => {
   return (
     internship?.work_mode || internship?.workMode || internship?.mode || ""
   );
 };
-
-/* =========================================================
-   HELPER - GET STIPEND
-========================================================= */
 
 const getStipend = (internship) => {
   if (!internship) {
@@ -133,155 +147,263 @@ const getStipend = (internship) => {
   return "";
 };
 
-/* =========================================================
-   HELPER - LOAD SAVED INTERNSHIPS
-========================================================= */
-
-const loadSavedInternshipsFromStorage = () => {
-  try {
-    const stored = localStorage.getItem(SAVED_INTERNSHIPS_KEY);
-
-    if (!stored) {
-      return [];
-    }
-
-    const parsed = JSON.parse(stored);
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    /*
-     * Remove invalid records.
-     */
-
-    const validInternships = parsed.filter((internship) => {
-      return internship && getInternshipId(internship) !== null;
-    });
-
-    return validInternships;
-  } catch (error) {
-    console.error("Unable to read saved internships:", error);
-
-    return [];
+function getApiErrorMessage(responseData, fallback = "Something went wrong.") {
+  if (!responseData) {
+    return fallback;
   }
-};
 
-/* =========================================================
-   COMPONENT
-========================================================= */
+  if (typeof responseData === "string") {
+    return responseData.trim() || fallback;
+  }
+
+  if (typeof responseData.detail === "string") {
+    return responseData.detail;
+  }
+
+  if (Array.isArray(responseData.detail)) {
+    const messages = responseData.detail
+      .map((item) => {
+        if (typeof item === "string") {
+          return item;
+        }
+
+        if (item && typeof item === "object") {
+          return item.msg || item.message || item.detail || "";
+        }
+
+        return "";
+      })
+      .filter(Boolean);
+
+    if (messages.length > 0) {
+      return messages.join(", ");
+    }
+  }
+
+  if (typeof responseData.message === "string") {
+    return responseData.message;
+  }
+
+  if (typeof responseData.error === "string") {
+    return responseData.error;
+  }
+
+  return fallback;
+}
+
+function normalizeSavedInternship(item) {
+  if (!item || typeof item !== "object") {
+    return null;
+  }
+
+  const nested =
+    item.internship && typeof item.internship === "object"
+      ? item.internship
+      : null;
+
+  const internshipId = getInternshipId(item);
+
+  if (internshipId === null) {
+    return null;
+  }
+
+  return {
+    ...nested,
+    ...item,
+    id: internshipId,
+    internship_id: internshipId,
+    saved_id: item.saved_id ?? item.saved_internship_id ?? null,
+    saved_at: item.saved_at ?? null,
+    title:
+      item.title ??
+      item.job_title ??
+      nested?.title ??
+      nested?.job_title ??
+      "Internship",
+    company_name:
+      item.company_name ??
+      item.company ??
+      nested?.company_name ??
+      nested?.company ??
+      "Company",
+    location: item.location ?? nested?.location ?? "",
+    duration: item.duration ?? nested?.duration ?? "",
+    work_mode: item.work_mode ?? item.workMode ?? nested?.work_mode ?? "",
+    stipend: item.stipend ?? nested?.stipend ?? "",
+  };
+}
 
 function SavedInternships() {
   const navigate = useNavigate();
-
-  /* =======================================================
-     STATE
-  ======================================================= */
 
   const [savedInternships, setSavedInternships] = useState([]);
 
   const [searchText, setSearchText] = useState("");
 
-  /* =======================================================
-     LOAD DATA
-  ======================================================= */
+  const [loading, setLoading] = useState(true);
 
-  const loadSavedInternships = () => {
-    const internships = loadSavedInternshipsFromStorage();
+  const [removingId, setRemovingId] = useState(null);
 
-    setSavedInternships(internships);
-  };
+  const [error, setError] = useState("");
 
-  /* =======================================================
-     INITIAL LOAD
-  ======================================================= */
+  const loadSavedInternships = useCallback(async () => {
+    const token = getAuthToken();
+
+    if (!token) {
+      clearAuthAndRedirect();
+
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      setError("");
+
+      const response = await fetch(SAVED_INTERNSHIPS_URL, {
+        method: "GET",
+
+        headers: {
+          Accept: "application/json",
+
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const responseText = await response.text();
+
+      let responseData = null;
+
+      try {
+        responseData = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        responseData = null;
+      }
+
+      if (response.status === 401) {
+        clearAuthAndRedirect();
+
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          getApiErrorMessage(responseData, "Unable to load saved internships."),
+        );
+      }
+
+      const backendInternships = Array.isArray(responseData?.internships)
+        ? responseData.internships
+        : Array.isArray(responseData?.saved_internships)
+          ? responseData.saved_internships
+          : [];
+
+      const normalizedInternships = backendInternships
+        .map(normalizeSavedInternship)
+        .filter(Boolean);
+
+      setSavedInternships(normalizedInternships);
+    } catch (requestError) {
+      console.error("Load saved internships error:", requestError);
+
+      setError(requestError?.message || "Unable to load saved internships.");
+
+      setSavedInternships([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadSavedInternships();
-  }, []);
-
-  /* =======================================================
-     LISTEN FOR STORAGE CHANGES
-  ======================================================= */
+  }, [loadSavedInternships]);
 
   useEffect(() => {
-    const handleStorageChange = (event) => {
-      if (event.key === SAVED_INTERNSHIPS_KEY) {
-        loadSavedInternships();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    /*
-     * Custom event allows the same browser tab
-     * to update immediately when another page
-     * changes saved internships.
-     */
-
-    const handleCustomSaveEvent = () => {
+    const handleFocus = () => {
       loadSavedInternships();
     };
 
-    window.addEventListener("savedInternshipsChanged", handleCustomSaveEvent);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-
-      window.removeEventListener(
-        "savedInternshipsChanged",
-        handleCustomSaveEvent,
-      );
+      window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+  }, [loadSavedInternships]);
 
-  /* =======================================================
-     REMOVE SAVED INTERNSHIP
-  ======================================================= */
-
-  const handleRemove = (internshipId) => {
+  const handleRemove = async (internshipId) => {
     if (internshipId === null || internshipId === undefined) {
       return;
     }
 
-    const updatedInternships = savedInternships.filter((internship) => {
-      const id = getInternshipId(internship);
+    const token = getAuthToken();
 
-      return String(id) !== String(internshipId);
-    });
+    if (!token) {
+      clearAuthAndRedirect();
 
-    /*
-     * Update React state.
-     */
+      return;
+    }
 
-    setSavedInternships(updatedInternships);
+    try {
+      setRemovingId(internshipId);
 
-    /*
-     * Update localStorage.
-     */
+      setError("");
 
-    localStorage.setItem(
-      SAVED_INTERNSHIPS_KEY,
-      JSON.stringify(updatedInternships),
-    );
+      const response = await fetch(
+        `${API_BASE}/api/internships/${encodeURIComponent(
+          String(internshipId),
+        )}/save`,
+        {
+          method: "DELETE",
 
-    /*
-     * The shared savedInternships storage is the
-     * single source of truth. No separate per-ID
-     * localStorage key is required.
-     */
+          headers: {
+            Accept: "application/json",
 
-    /*
-     * Tell other components/pages
-     * that saved internships changed.
-     */
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
-    window.dispatchEvent(new Event("savedInternshipsChanged"));
+      const responseText = await response.text();
+
+      let responseData = null;
+
+      try {
+        responseData = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        responseData = null;
+      }
+
+      if (response.status === 401) {
+        clearAuthAndRedirect();
+
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          getApiErrorMessage(
+            responseData,
+            "Unable to remove saved internship.",
+          ),
+        );
+      }
+
+      setSavedInternships((previous) =>
+        previous.filter(
+          (internship) =>
+            String(getInternshipId(internship)) !== String(internshipId),
+        ),
+      );
+
+      window.dispatchEvent(new Event("savedInternshipsChanged"));
+    } catch (requestError) {
+      console.error("Remove saved internship error:", requestError);
+
+      setError(requestError?.message || "Unable to remove saved internship.");
+    } finally {
+      setRemovingId(null);
+    }
   };
-
-  /* =======================================================
-     VIEW INTERNSHIP DETAILS
-  ======================================================= */
 
   const handleViewDetails = (internshipId) => {
     if (internshipId === null || internshipId === undefined) {
@@ -290,29 +412,24 @@ function SavedInternships() {
       return;
     }
 
+    const selectedInternship = savedInternships.find(
+      (item) => String(getInternshipId(item)) === String(internshipId),
+    );
+
     navigate(`/internships/${internshipId}`, {
       state: {
         internshipId: String(internshipId),
+
         internship_id: String(internshipId),
-        internship:
-          savedInternships.find(
-            (item) => String(getInternshipId(item)) === String(internshipId),
-          ) || null,
+
+        internship: selectedInternship || null,
       },
     });
   };
 
-  /* =======================================================
-     GO TO INTERNSHIPS
-  ======================================================= */
-
   const handleBrowseInternships = () => {
     navigate("/internships");
   };
-
-  /* =======================================================
-     SEARCH
-  ======================================================= */
 
   const normalizedSearch = searchText.trim().toLowerCase();
 
@@ -337,22 +454,71 @@ function SavedInternships() {
     );
   });
 
-  /* =======================================================
-     EMPTY STATE
-  ======================================================= */
-
-  if (savedInternships.length === 0) {
+  if (loading) {
     return (
       <div className="saved-page">
-        {/* Background */}
-
         <div className="saved-background-orb saved-orb-one" />
 
         <div className="saved-background-orb saved-orb-two" />
 
         <div className="saved-background-orb saved-orb-three" />
 
-        {/* Empty Card */}
+        <section className="saved-empty">
+          <div className="saved-empty-icon">
+            <Bookmark size={36} />
+          </div>
+
+          <span className="saved-eyebrow">SAVED INTERNSHIPS</span>
+
+          <h1>Loading saved internships...</h1>
+
+          <p>Please wait while we load your saved internships.</p>
+        </section>
+      </div>
+    );
+  }
+
+  if (error && savedInternships.length === 0) {
+    return (
+      <div className="saved-page">
+        <div className="saved-background-orb saved-orb-one" />
+
+        <div className="saved-background-orb saved-orb-two" />
+
+        <div className="saved-background-orb saved-orb-three" />
+
+        <section className="saved-empty">
+          <div className="saved-empty-icon">
+            <Bookmark size={36} />
+          </div>
+
+          <span className="saved-eyebrow">SAVED INTERNSHIPS</span>
+
+          <h1>Unable to load saved internships</h1>
+
+          <p>{error}</p>
+
+          <button
+            type="button"
+            className="saved-browse-button"
+            onClick={loadSavedInternships}
+          >
+            Try Again
+            <ArrowRight size={18} />
+          </button>
+        </section>
+      </div>
+    );
+  }
+
+  if (savedInternships.length === 0) {
+    return (
+      <div className="saved-page">
+        <div className="saved-background-orb saved-orb-one" />
+
+        <div className="saved-background-orb saved-orb-two" />
+
+        <div className="saved-background-orb saved-orb-three" />
 
         <section className="saved-empty">
           <div className="saved-empty-icon">
@@ -382,25 +548,14 @@ function SavedInternships() {
     );
   }
 
-  /* =======================================================
-     MAIN PAGE
-  ======================================================= */
-
   return (
     <div className="saved-page">
-      {/* =================================================
-          BACKGROUND
-      ================================================= */}
 
       <div className="saved-background-orb saved-orb-one" />
 
       <div className="saved-background-orb saved-orb-two" />
 
       <div className="saved-background-orb saved-orb-three" />
-
-      {/* =================================================
-          HERO
-      ================================================= */}
 
       <section className="saved-hero">
         <div className="saved-hero-content">
@@ -413,8 +568,6 @@ function SavedInternships() {
             anytime.
           </p>
         </div>
-
-        {/* Count */}
 
         <div className="saved-count-card">
           <div className="saved-count-icon">
@@ -429,9 +582,11 @@ function SavedInternships() {
         </div>
       </section>
 
-      {/* =================================================
-          SEARCH TOOLBAR
-      ================================================= */}
+      {error && (
+        <section className="saved-no-results">
+          <p>{error}</p>
+        </section>
+      )}
 
       <section className="saved-toolbar">
         <div className="saved-search">
@@ -467,10 +622,6 @@ function SavedInternships() {
         </div>
       </section>
 
-      {/* =================================================
-          SEARCH NO RESULTS
-      ================================================= */}
-
       {filteredInternships.length === 0 ? (
         <section className="saved-no-results">
           <Search size={32} />
@@ -480,10 +631,6 @@ function SavedInternships() {
           <p>Try searching with another keyword.</p>
         </section>
       ) : (
-        /* =================================================
-           SAVED INTERNSHIP LIST
-        ================================================= */
-
         <section className="saved-list">
           {filteredInternships.map((internship, index) => {
             const internshipId = getInternshipId(internship);
@@ -500,6 +647,8 @@ function SavedInternships() {
 
             const stipend = getStipend(internship);
 
+            const isRemoving = String(removingId) === String(internshipId);
+
             return (
               <article
                 className="saved-card"
@@ -508,9 +657,6 @@ function SavedInternships() {
                   animationDelay: `${index * 0.08}s`,
                 }}
               >
-                {/* =========================================
-                      COMPANY
-                  ========================================= */}
 
                 <div className="saved-company">
                   <div className="saved-company-logo">
@@ -523,10 +669,6 @@ function SavedInternships() {
                     <p>{company}</p>
                   </div>
                 </div>
-
-                {/* =========================================
-                      DETAILS
-                  ========================================= */}
 
                 <div className="saved-meta">
                   {location && (
@@ -562,10 +704,6 @@ function SavedInternships() {
                   )}
                 </div>
 
-                {/* =========================================
-                      ACTIONS
-                  ========================================= */}
-
                 <div className="saved-actions">
                   <button
                     type="button"
@@ -584,10 +722,12 @@ function SavedInternships() {
                     onClick={() => {
                       handleRemove(internshipId);
                     }}
+                    disabled={isRemoving}
                     title="Remove from saved internships"
                   >
                     <Trash2 size={17} />
-                    Remove
+
+                    {isRemoving ? "Removing..." : "Remove"}
                   </button>
                 </div>
               </article>

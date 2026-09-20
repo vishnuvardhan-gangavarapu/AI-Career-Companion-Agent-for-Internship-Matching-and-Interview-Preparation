@@ -122,53 +122,103 @@ def session_belongs_to_dashboard(
     dashboard_type: str,
 ) -> bool:
     """
-    Determine whether a chat session belongs to a dashboard.
+    AI Assistant chat history is unified for the
+    authenticated user across all intern pages.
 
-    New sessions:
+    The authenticated user's user_id is the ownership
+    boundary. Dashboard/page/route must not split the
+    same user's AI Assistant history.
+
+    Existing sessions are intentionally included:
+        chat_...
         default_chat_...
         user_chat_...
-
-    Existing legacy sessions:
-        chat_...
-
-    Legacy sessions are kept under DefaultDashboard so
-    existing chat history is not lost.
+        any other previously generated session ID
     """
 
-    dashboard_type = normalize_dashboard_type(
-        dashboard_type
+    return True
+
+
+# =========================================================
+# SEPARATE PREPARATION HISTORY FROM AI ASSISTANT HISTORY
+# =========================================================
+
+# Preparation Agent stores its durable practice/interview records
+# in the same AIChatHistory table, but marks them explicitly.
+# Those records must NEVER appear in the InternMatch AI Assistant
+# history.
+PREPARATION_HISTORY_MARKERS = (
+    "[PREPARATION_QUESTION]",
+    "[PREPARATION_ANSWER]",
+    "[PREPARATION_SESSION]",
+    "[PREPARATION_MOCK_INTERVIEW]",
+    "[PREPARATION_MOCK_QUESTION]",
+    "[PREPARATION_MOCK_ANSWER]",
+    "[PREPARATION_VOICE_INTERVIEW]",
+    "[PREPARATION_VOICE_QUESTION]",
+    "[PREPARATION_VOICE_ANSWER]",
+)
+
+
+def is_preparation_history_record(
+    record: AIChatHistory,
+) -> bool:
+    message = str(
+        getattr(record, "user_message", "") or ""
+    ).lstrip()
+
+    return any(
+        message.startswith(marker)
+        for marker in PREPARATION_HISTORY_MARKERS
     )
 
-    if dashboard_type == "user":
-        return session_id.startswith(
-            "user_chat_"
+
+def is_ai_assistant_history_record(
+    record: AIChatHistory,
+) -> bool:
+    return not is_preparation_history_record(record)
+
+
+def get_ai_assistant_history(
+    db: Session,
+    user_id: int,
+    session_id: Optional[str] = None,
+):
+    query = db.query(AIChatHistory).filter(
+        AIChatHistory.user_id == user_id,
+    )
+
+    if session_id:
+        query = query.filter(
+            AIChatHistory.session_id == session_id,
         )
 
-    return (
-        session_id.startswith("chat_")
-        or session_id.startswith(
-            "default_chat_"
+    records = (
+        query.order_by(
+            AIChatHistory.created_at.asc(),
+            AIChatHistory.id.asc(),
         )
+        .all()
     )
+
+    return [
+        record
+        for record in records
+        if is_ai_assistant_history_record(record)
+    ]
 
 
 def create_session_id(
     dashboard_type: str = "default",
 ) -> str:
-    """Create a unique session ID for the selected dashboard."""
+    """
+    Create one unified AI Assistant session ID.
 
-    dashboard_type = normalize_dashboard_type(
-        dashboard_type
-    )
+    dashboard_type is accepted for API compatibility,
+    but it must not create a separate chat history.
+    """
 
-    if dashboard_type == "user":
-        return (
-            f"user_chat_{uuid.uuid4().hex}"
-        )
-
-    return (
-        f"default_chat_{uuid.uuid4().hex}"
-    )
+    return f"chat_{uuid.uuid4().hex}"
 
 
 # =========================================================
@@ -290,17 +340,10 @@ def get_session_history(
     session_id: str,
 ):
 
-    return (
-        db.query(AIChatHistory)
-        .filter(
-            AIChatHistory.user_id == user_id,
-            AIChatHistory.session_id == session_id,
-        )
-        .order_by(
-            AIChatHistory.created_at.asc(),
-            AIChatHistory.id.asc(),
-        )
-        .all()
+    return get_ai_assistant_history(
+        db=db,
+        user_id=user_id,
+        session_id=session_id,
     )
 
 
@@ -717,16 +760,25 @@ def check_session_access(
             detail="Chat session not found.",
         )
 
-    user_session = (
+    user_session_records = (
         db.query(AIChatHistory)
         .filter(
             AIChatHistory.user_id == user_id,
             AIChatHistory.session_id == session_id,
         )
-        .first()
+        .order_by(
+            AIChatHistory.created_at.asc(),
+            AIChatHistory.id.asc(),
+        )
+        .all()
     )
 
-    if user_session:
+    # A session containing only Preparation Agent records is not
+    # an AI Assistant session.
+    if any(
+        is_ai_assistant_history_record(record)
+        for record in user_session_records
+    ):
         return
 
     other_user_session = (
@@ -1061,8 +1113,8 @@ def get_chat_sessions(
     ),
 ):
     """
-    Return only chat sessions belonging to the
-    current dashboard.
+    Return only InternMatch AI Assistant chat sessions for
+    the authenticated user. Preparation Agent records are excluded.
     """
 
     dashboard_type = normalize_dashboard_type(
@@ -1074,18 +1126,14 @@ def get_chat_sessions(
         dashboard_type=dashboard_type,
     )
 
-    records = (
-        db.query(AIChatHistory)
-        .filter(
-            AIChatHistory.user_id == current_user.id
-        )
-        .order_by(
-            AIChatHistory.created_at.asc(),
-            AIChatHistory.id.asc(),
-        )
-        .all()
+    records = get_ai_assistant_history(
+        db=db,
+        user_id=current_user.id,
     )
 
+    # AI Assistant history is unified across the user's intern pages.
+    # dashboard_type is retained only for API compatibility and
+    # frontend page context; it does not split this history.
     records = [
         record
         for record in records
@@ -1156,7 +1204,7 @@ def get_chat_sessions(
     return {
         "sessions": result,
         "total_sessions": len(result),
-        "dashboard_type": dashboard_type,
+        "dashboard_type": "unified",
     }
 
 
@@ -1172,9 +1220,9 @@ def get_chat_history(
     ),
 ):
     """
-    Return complete history for one session,
-    only when that session belongs to the current
-    dashboard and authenticated user.
+    Return complete InternMatch AI Assistant history for one session.
+    Preparation Agent records are excluded, and ownership remains
+    restricted to the authenticated user.
     """
 
     dashboard_type = normalize_dashboard_type(
@@ -1246,7 +1294,7 @@ def get_chat_history(
 
         "total_messages": len(messages),
 
-        "dashboard_type": dashboard_type,
+        "dashboard_type": "unified",
     }
 
 
@@ -1262,7 +1310,7 @@ def delete_chat_session(
     ),
 ):
     """
-    Delete one chat session from the current dashboard only.
+    Delete one InternMatch AI Assistant chat session only.
     """
 
     dashboard_type = normalize_dashboard_type(
@@ -1306,7 +1354,7 @@ def delete_chat_session(
             "Chat session deleted successfully."
         ),
         "session_id": session_id,
-        "dashboard_type": dashboard_type,
+        "dashboard_type": "unified",
     }
 
 
@@ -1364,5 +1412,5 @@ def delete_all_chats(
             "deleted successfully."
         ),
         "deleted_messages": deleted_count,
-        "dashboard_type": dashboard_type,
+        "dashboard_type": "unified",
     }

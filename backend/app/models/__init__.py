@@ -12,14 +12,20 @@ from app.models.preparation_message_document import PreparationMessageDocument
 from app.models.preparation_document_section import PreparationDocumentSection
 from app.models.preparation_document_chunk import PreparationDocumentChunk
 
+
 __all__ = [
     "User",
     "Resume",
     "ResumeProfile",
     "Internship",
-    "Application",
     "SavedInternship",
+    "Application",
     "Notification",
     "AIChatHistory",
-    
+    "PreparationConversation",
+    "PreparationMessage",
+    "PreparationDocument",
+    "PreparationMessageDocument",
+    "PreparationDocumentSection",
+    "PreparationDocumentChunk",
 ]

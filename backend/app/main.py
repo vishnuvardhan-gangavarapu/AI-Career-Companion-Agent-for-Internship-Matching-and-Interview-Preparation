@@ -4,6 +4,23 @@ from fastapi.staticfiles import StaticFiles
 
 from app.database.connection import Base, engine
 
+from app.models import (
+    User,
+    Resume,
+    ResumeProfile,
+    Internship,
+    SavedInternship,
+    Application,
+    Notification,
+    AIChatHistory,
+    PreparationConversation,
+    PreparationMessage,
+    PreparationDocument,
+    PreparationMessageDocument,
+    PreparationDocumentSection,
+    PreparationDocumentChunk,
+)
+
 from app.routers.auth import router as auth_router
 from app.routers.resume import router as resume_router
 from app.routers.profile import router as profile_router
@@ -71,7 +88,10 @@ app.include_router(internship_router)
 app.include_router(cover_letter_router)
 app.include_router(application_router)
 app.include_router(dashboard_router)
+
+# Saved internships
 app.include_router(saved_internships_router)
+
 app.include_router(notifications_router)
 app.include_router(ai_assistant_router)
 app.include_router(preparation_router)

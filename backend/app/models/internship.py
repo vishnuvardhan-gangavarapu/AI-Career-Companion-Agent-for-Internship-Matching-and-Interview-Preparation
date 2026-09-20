@@ -1,5 +1,4 @@
 from sqlalchemy import (
-    Boolean,
     Column,
     Date,
     DateTime,
@@ -11,8 +10,10 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import relationship
 
 from app.database.connection import Base
+
 
 class Internship(Base):
     __tablename__ = "internships"
@@ -100,8 +101,24 @@ class Internship(Base):
         server_default=text("CURRENT_TIMESTAMP"),
     )
 
+    # Relationship with saved internships
+    saved_by_users = relationship(
+        "SavedInternship",
+        back_populates="internship",
+        cascade="all, delete-orphan",
+    )
+
+
 class SavedInternship(Base):
     __tablename__ = "saved_internships"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "internship_id",
+            name="uq_saved_internship_user_internship",
+        ),
+    )
 
     id = Column(
         Integer,
@@ -111,18 +128,38 @@ class SavedInternship(Base):
 
     user_id = Column(
         Integer,
-        ForeignKey("users.id"),
+        ForeignKey(
+            "users.id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
+        index=True,
     )
 
     internship_id = Column(
         Integer,
-        ForeignKey("internships.id"),
+        ForeignKey(
+            "internships.id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
+        index=True,
     )
 
     saved_at = Column(
         DateTime,
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP"),
+    )
+
+    # Relationship with User
+    user = relationship(
+        "User",
+        back_populates="saved_internships",
+    )
+
+    # Relationship with Internship
+    internship = relationship(
+        "Internship",
+        back_populates="saved_by_users",
     )

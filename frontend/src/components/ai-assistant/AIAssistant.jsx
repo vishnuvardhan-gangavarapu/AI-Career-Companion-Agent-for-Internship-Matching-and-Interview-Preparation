@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
 
 import {
   Bot,
@@ -27,8 +26,12 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 // DASHBOARD SCOPE
 // =========================================================
 
-function getDashboardType(pathname = window.location.pathname) {
-  const path = String(pathname || "/").toLowerCase();
+function getDashboardType() {
+  const path = window.location.pathname.toLowerCase();
+
+  if (path.startsWith("/admin") || path.includes("/admindashboard")) {
+    return "admin";
+  }
 
   if (path.includes("/userdashboard")) {
     return "user";
@@ -268,6 +271,34 @@ function getToken(auth) {
 // BACKEND HISTORY → FRONTEND MESSAGES
 // =========================================================
 
+function isPreparationHistorySession(session) {
+  const values = [
+    session?.first_message,
+    session?.first_question,
+    session?.title,
+    session?.last_message,
+  ];
+
+  const markers = [
+    "[PREPARATION_QUESTION]",
+    "[PREPARATION_ANSWER]",
+    "[PREPARATION_SESSION]",
+    "[PREPARATION_MOCK_INTERVIEW]",
+    "[PREPARATION_MOCK_QUESTION]",
+    "[PREPARATION_MOCK_ANSWER]",
+    "[PREPARATION_VOICE_INTERVIEW]",
+    "[PREPARATION_VOICE_QUESTION]",
+    "[PREPARATION_VOICE_ANSWER]",
+  ];
+
+  return values.some((value) => {
+    const text = String(value || "").trim();
+
+    return markers.some((marker) => text.startsWith(marker));
+  });
+}
+
+
 function convertHistoryToMessages(history) {
   const result = [];
 
@@ -308,10 +339,9 @@ function convertHistoryToMessages(history) {
 
 function AIAssistant() {
   const auth = useAuth();
-  const location = useLocation();
 
   const token = getToken(auth);
-  const dashboardType = getDashboardType(location.pathname);
+  const dashboardType = getDashboardType();
 
   // =======================================================
   // STATE
@@ -417,7 +447,7 @@ function AIAssistant() {
       setError("");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/ai/chats?dashboard_type=${encodeURIComponent(dashboardType)}`,
+        `${API_BASE_URL}/api/ai/chats`,
         {
           method: "GET",
 
@@ -450,13 +480,20 @@ function AIAssistant() {
        * }
        */
 
-      if (Array.isArray(data)) {
-        setChatSessions(data);
-      } else if (Array.isArray(data?.sessions)) {
-        setChatSessions(data.sessions);
-      } else {
-        setChatSessions([]);
-      }
+      const sessions = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.sessions)
+          ? data.sessions
+          : [];
+
+      // Preparation Agent has its own history. Never render its
+      // marked records inside the InternMatch AI Assistant.
+      setChatSessions(
+        sessions.filter(
+          (session) =>
+            !isPreparationHistorySession(session),
+        ),
+      );
     } catch (err) {
       console.error("Chat sessions error:", err);
 
@@ -485,7 +522,7 @@ function AIAssistant() {
       setError("");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/ai/chats/${encodeURIComponent(sessionId)}?dashboard_type=${encodeURIComponent(dashboardType)}`,
+        `${API_BASE_URL}/api/ai/chats/${encodeURIComponent(sessionId)}`,
         {
           method: "GET",
 
@@ -763,7 +800,7 @@ function AIAssistant() {
       setError("");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/ai/chats/${encodeURIComponent(sessionId)}?dashboard_type=${encodeURIComponent(dashboardType)}`,
+        `${API_BASE_URL}/api/ai/chats/${encodeURIComponent(sessionId)}`,
         {
           method: "DELETE",
 
@@ -839,7 +876,7 @@ function AIAssistant() {
       setError("");
 
       const response = await fetch(
-        `${API_BASE_URL}/api/ai/chats?dashboard_type=${encodeURIComponent(dashboardType)}`,
+        `${API_BASE_URL}/api/ai/chats`,
         {
           method: "DELETE",
 
@@ -1125,7 +1162,11 @@ function AIAssistant() {
             <div className="ai-assistant-title">
               <h3>InternMatch AI</h3>
 
-              <span>Your internship assistant</span>
+              <span>
+                {dashboardType === "admin"
+                  ? "Your admin assistant"
+                  : "Your internship assistant"}
+              </span>
             </div>
           </div>
 
