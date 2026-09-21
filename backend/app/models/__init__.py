@@ -11,7 +11,7 @@ from app.models.preparation_document import PreparationDocument
 from app.models.preparation_message_document import PreparationMessageDocument
 from app.models.preparation_document_section import PreparationDocumentSection
 from app.models.preparation_document_chunk import PreparationDocumentChunk
-
+from app.models.password_reset_request import PasswordResetRequest
 
 __all__ = [
     "User",
@@ -28,4 +28,5 @@ __all__ = [
     "PreparationMessageDocument",
     "PreparationDocumentSection",
     "PreparationDocumentChunk",
+    "PasswordResetRequest",
 ]

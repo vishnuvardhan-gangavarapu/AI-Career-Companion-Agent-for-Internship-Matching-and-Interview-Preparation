@@ -103,3 +103,9 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+
+    password_reset_requests = relationship(
+        "PasswordResetRequest",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
