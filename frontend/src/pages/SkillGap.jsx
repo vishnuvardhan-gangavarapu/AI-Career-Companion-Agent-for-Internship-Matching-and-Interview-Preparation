@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -19,6 +19,45 @@ import {
 
 import "../styles/SkillGap.css";
 
+const API_BASE_URL = "http://127.0.0.1:8000";
+
+const getAuthToken = () =>
+  localStorage.getItem("access_token") ||
+  localStorage.getItem("token") ||
+  localStorage.getItem("accessToken") ||
+  "";
+
+const getAuthHeaders = () => {
+  const token = getAuthToken();
+
+  return token
+    ? {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      }
+    : {
+        Accept: "application/json",
+      };
+};
+
+const getSkillIcon = (skill) => {
+  const name = String(skill || "").toLowerCase();
+
+  if (["git", "github", "gitlab", "testing"].some((item) => name.includes(item))) {
+    return CheckCircle2;
+  }
+
+  if (["next.js", "react", "html", "css", "node", "spring"].some((item) => name.includes(item))) {
+    return Code2;
+  }
+
+  if (["sql", "mysql", "postgres", "mongodb", "database"].some((item) => name.includes(item))) {
+    return Brain;
+  }
+
+  return Code2;
+};
+
 function SkillGap() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("All");
@@ -33,186 +72,158 @@ function SkillGap() {
 
   /*
    * =========================================================
-   * USER / TARGET ROLE DATA
+   * BACKEND SKILL-GAP DATA
    * =========================================================
-   *
-   * These values can later be replaced with your backend
-   * skill-gap API response.
    */
 
-  const targetRole =
-    localStorage.getItem("selectedRole") ||
-    localStorage.getItem("targetRole") ||
-    "Frontend Developer Intern";
-
+  // The backend is the source of truth for the resume used by Skill Gap.
+  // It identifies the logged-in user from the JWT and automatically selects
+  // that user's latest analysed resume. We intentionally do not depend on
+  // selectedSkillGapResumeId in localStorage here, because older analysed
+  // resumes may have been created before that browser key existed.
   const userName = useMemo(() => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
-
       return user.name || user.full_name || "Your";
     } catch {
       return "Your";
     }
   }, []);
 
-  /*
-   * =========================================================
-   * SKILL DATA
-   * =========================================================
-   */
+  const [skillGap, setSkillGap] = useState(null);
+  const [resumeInfo, setResumeInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const matchedSkills = [
-    {
-      name: "HTML5",
-      level: 92,
-      category: "Frontend",
-      icon: Code2,
-    },
-    {
-      name: "CSS3",
-      level: 88,
-      category: "Frontend",
-      icon: Code2,
-    },
-    {
-      name: "JavaScript",
-      level: 82,
-      category: "Programming",
-      icon: Code2,
-    },
-    {
-      name: "React.js",
-      level: 78,
-      category: "Frontend",
-      icon: Code2,
-    },
-    {
-      name: "Git",
-      level: 76,
-      category: "Tools",
-      icon: Code2,
-    },
-  ];
+  useEffect(() => {
+    let cancelled = false;
 
-  const missingSkills = [
-    {
-      name: "TypeScript",
-      priority: "High",
-      category: "Frontend",
-      reason: "Frequently requested for modern React roles.",
-    },
-    {
-      name: "Next.js",
-      priority: "High",
-      category: "Frontend",
-      reason: "Improves your readiness for production React applications.",
-    },
-    {
-      name: "Testing",
-      priority: "Medium",
-      category: "Tools",
-      reason: "Companies expect developers to understand frontend testing.",
-    },
-    {
-      name: "REST APIs",
-      priority: "Medium",
-      category: "Backend",
-      reason:
-        "Important for connecting frontend applications with backend services.",
-    },
-  ];
+    const fetchSkillGap = async () => {
+      setLoading(true);
+      setError("");
 
-  const improvingSkills = [
-    {
-      name: "React.js",
-      progress: 78,
-      target: 90,
-      category: "Frontend",
-    },
-    {
-      name: "JavaScript",
-      progress: 82,
-      target: 92,
-      category: "Programming",
-    },
-    {
-      name: "Git",
-      progress: 76,
-      target: 88,
-      category: "Tools",
-    },
-  ];
+      const token = getAuthToken();
 
-  const roadmap = [
-    {
-      number: "01",
-      topic: "TypeScript",
-      title: "Master TypeScript",
-      description:
-        "Learn types, interfaces, generics and TypeScript with React.",
-      duration: "1–2 weeks",
-      level: "High Priority",
-      icon: Code2,
-    },
-    {
-      number: "02",
-      topic: "Next.js",
-      title: "Build with Next.js",
-      description:
-        "Learn routing, server components, API routes and deployment.",
-      duration: "2–3 weeks",
-      level: "High Priority",
-      icon: Zap,
-    },
-    {
-      number: "03",
-      topic: "Testing",
-      title: "Learn Frontend Testing",
-      description: "Practice unit and component testing with modern tools.",
-      duration: "1 week",
-      level: "Medium Priority",
-      icon: CheckCircle2,
-    },
-    {
-      number: "04",
-      topic: "REST APIs",
-      title: "Work with REST APIs",
-      description: "Connect React applications with real backend APIs.",
-      duration: "1 week",
-      level: "Medium Priority",
-      icon: Brain,
-    },
-  ];
+      if (!token) {
+        if (!cancelled) {
+          setError("Your session has expired. Please login again.");
+          setLoading(false);
+        }
+        return;
+      }
 
-  /*
-   * =========================================================
-   * FILTER
-   * =========================================================
-   */
+      try {
+        // Do not send a resume_id from localStorage.
+        // The backend finds the latest analysed resume owned by the JWT user.
+        const response = await fetch(
+          `${API_BASE_URL}/api/skill-gap`,
+          {
+            method: "GET",
+            headers: getAuthHeaders(),
+          },
+        );
 
-  // Merge improving skills into the matched skill card instead of rendering
-  // the same skill a second time. React.js, JavaScript and Git therefore
-  // appear once, with their current proficiency and improvement goal together.
+        if (response.status === 401) {
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        let data = null;
+
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data?.detail ||
+              data?.message ||
+              `Unable to load skill gap (${response.status}).`,
+          );
+        }
+
+        if (!data?.skill_gap) {
+          throw new Error("The server returned an empty skill-gap analysis.");
+        }
+
+        if (!cancelled) {
+          setSkillGap(data.skill_gap);
+          setResumeInfo(data.resume || null);
+        }
+      } catch (fetchError) {
+        console.error("Skill gap API error:", fetchError);
+
+        if (!cancelled) {
+          setSkillGap(null);
+          setResumeInfo(null);
+          setError(
+            fetchError?.message ||
+              "Unable to load your skill gap. Please try again.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchSkillGap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+
+  const matchedSkills = (skillGap?.matched_skills || []).map((skill) => ({
+    ...skill,
+    status: "matched",
+    icon: getSkillIcon(skill.name),
+  }));
+
+  const missingSkills = (skillGap?.missing_skills || []).map((skill) => ({
+    ...skill,
+    status: "missing",
+    icon: getSkillIcon(skill.name),
+  }));
+
+  const improvingSkills = (skillGap?.improving_skills || []).map((skill) => ({
+    ...skill,
+    icon: getSkillIcon(skill.name),
+  }));
+
+  const roadmap = (skillGap?.roadmap || []).map((item, index) => ({
+    ...item,
+    number: item.number || String(index + 1).padStart(2, "0"),
+    title: item.title || `Learn ${item.topic}`,
+    description:
+      item.description ||
+      `Build practical knowledge of ${item.topic} through practice and a small project.`,
+    duration: item.duration || "1 week",
+    level: item.level || "Medium Priority",
+    icon: getSkillIcon(item.topic),
+  }));
+
   const improvingBySkill = new Map(
-    improvingSkills.map((skill) => [skill.name.toLowerCase(), skill]),
+    improvingSkills.map((skill) => [String(skill.name).toLowerCase(), skill]),
   );
 
   const uniqueMatchedSkills = matchedSkills.map((skill) => {
-    const improvement = improvingBySkill.get(skill.name.toLowerCase());
+    const improvement = improvingBySkill.get(String(skill.name).toLowerCase());
+
     return {
       ...skill,
-      status: "matched",
-      progress: improvement?.progress ?? skill.level,
+      progress: improvement?.progress ?? null,
       target: improvement?.target ?? null,
     };
   });
 
   const allSkills = [
     ...uniqueMatchedSkills,
-    ...missingSkills.map((skill) => ({
-      ...skill,
-      status: "missing",
-    })),
+    ...missingSkills,
   ];
 
   const filteredSkills =
@@ -220,19 +231,21 @@ function SkillGap() {
       ? allSkills
       : allSkills.filter((skill) => skill.category === activeCategory);
 
-  /*
-   * =========================================================
-   * STATS
-   * =========================================================
-   */
-
-  const overallMatch = 78;
-
-  const matchedCount = matchedSkills.length;
-
-  const missingCount = missingSkills.length;
-
-  const improvingCount = improvingSkills.length;
+  const overallMatch = Number(skillGap?.overall_match ?? 0);
+  const matchedCount = Number(skillGap?.matched_count ?? matchedSkills.length);
+  const missingCount = Number(skillGap?.missing_count ?? missingSkills.length);
+  const improvingCount = Number(
+    skillGap?.improving_count ?? improvingSkills.length,
+  );
+  const roleMatchLabel = skillGap?.role_match_label || skillGap?.career_readiness || "Average";
+  const targetRole = skillGap?.target_role || "Target Role";
+  const roleSource = skillGap?.role_source || "default";
+  const roleSourceLabel =
+    roleSource === "resume_mentioned"
+      ? "Based on your resume"
+      : roleSource === "skills_inferred"
+        ? "Inferred from your skills"
+        : "Default role";
 
   const startSkillPreparation = (skill, difficulty = "medium") => {
     const topic = String(skill?.name || "").trim();
@@ -282,6 +295,58 @@ function SkillGap() {
    * =========================================================
    */
 
+  if (loading) {
+    return (
+      <div className="skill-gap-page">
+        <div className="skill-gap-orb skill-gap-orb-one" aria-hidden="true" />
+        <div className="skill-gap-orb skill-gap-orb-two" aria-hidden="true" />
+        <div className="skill-gap-orb skill-gap-orb-three" aria-hidden="true" />
+        <section className="skill-gap-hero">
+          <div className="skill-gap-hero-content">
+            <div className="skill-gap-eyebrow">
+              <Sparkles size={15} />
+              AI SKILL ANALYSIS
+            </div>
+            <h1>Analysing your<span> skill gap.</span></h1>
+            <p>We are detecting your target role from your resume and skills.</p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="skill-gap-page">
+        <div className="skill-gap-orb skill-gap-orb-one" aria-hidden="true" />
+        <section className="skill-gap-bottom-cta" style={{ margin: "80px auto", maxWidth: "900px" }}>
+          <div className="skill-gap-bottom-icon">
+            <Target size={25} />
+          </div>
+          <div className="skill-gap-bottom-content">
+            <span>SKILL GAP</span>
+            <h2>We couldn't load your analysis.</h2>
+            <p>{error}</p>
+          </div>
+          <button
+            type="button"
+            className="skill-gap-primary-button"
+            onClick={() => navigate("/resume")}
+          >
+            Go to Resume
+            <ArrowRight size={18} />
+          </button>
+        </section>
+      </div>
+    );
+  }
+
+  /*
+   * =========================================================
+   * RENDER
+   * =========================================================
+   */
+
   return (
     <div className="skill-gap-page">
       {/* =====================================================
@@ -322,7 +387,16 @@ function SkillGap() {
 
             <div>
               <span>YOUR TARGET ROLE</span>
-              <strong>{targetRole}</strong>
+              <strong style={{ display: "block" }}>{targetRole}</strong>
+              <small
+                style={{
+                  display: "block",
+                  marginTop: "4px",
+                  lineHeight: 1.3,
+                }}
+              >
+                {roleSourceLabel}
+              </small>
             </div>
           </div>
         </div>
@@ -347,7 +421,7 @@ function SkillGap() {
                 r="65"
                 className="skill-gap-score-progress"
                 strokeDasharray="408"
-                strokeDashoffset="90"
+                strokeDashoffset={408 - (408 * Math.max(0, Math.min(100, overallMatch))) / 100}
               />
             </svg>
 
@@ -361,10 +435,13 @@ function SkillGap() {
           <div className="skill-gap-score-text">
             <div className="score-status">
               <TrendingUp size={15} />
-              Good progress
+              {roleMatchLabel} match
             </div>
 
-            <p>You're already on the right path.</p>
+            <p>
+              {targetRole}
+              {resumeInfo?.file_name ? ` · ${resumeInfo.file_name}` : ""}
+            </p>
           </div>
         </div>
       </section>
@@ -407,7 +484,7 @@ function SkillGap() {
 
           <div>
             <strong>{improvingCount}</strong>
-            <span>Skills to improve</span>
+            <span>Priority skills</span>
           </div>
 
           <div className="skill-gap-stat-decoration">↑</div>
@@ -419,8 +496,8 @@ function SkillGap() {
           </div>
 
           <div>
-            <strong>Good</strong>
-            <span>Career readiness</span>
+            <strong>{roleMatchLabel}</strong>
+            <span>Role match</span>
           </div>
 
           <div className="skill-gap-stat-decoration">★</div>
@@ -455,7 +532,7 @@ function SkillGap() {
         ================================================= */}
 
         <div className="skill-gap-filters">
-          {["All", "Frontend", "Programming", "Tools", "Backend"].map(
+          {["All", "Frontend", "Programming", "Tools", "Backend", "Database"].map(
             (category) => (
               <button
                 key={category}
@@ -503,38 +580,10 @@ function SkillGap() {
                 </div>
 
                 {skill.status === "matched" && (
-                  <>
-                    <div className="skill-gap-progress-row">
-                      <span>{skill.target ? `Current ${skill.level}%` : "Proficiency"}</span>
-                      <strong>{skill.target ? `Goal ${skill.target}%` : `${skill.level}%`}</strong>
-                    </div>
-
-                    <div className="skill-gap-progress">
-                      <div
-                        style={{
-                          width: `${skill.level}%`,
-                        }}
-                      />
-                    </div>
-                  </>
-                )}
-
-                {skill.status === "improving" && (
-                  <>
-                    <div className="skill-gap-progress-row">
-                      <span>Current {skill.progress}%</span>
-
-                      <strong>Goal {skill.target}%</strong>
-                    </div>
-
-                    <div className="skill-gap-progress improving-bar">
-                      <div
-                        style={{
-                          width: `${skill.progress}%`,
-                        }}
-                      />
-                    </div>
-                  </>
+                  <div className="skill-gap-progress-row">
+                    <span>Resume evidence</span>
+                    <strong>Matched</strong>
+                  </div>
                 )}
 
                 {skill.status === "missing" && (
@@ -630,31 +679,29 @@ function SkillGap() {
 
           <p>
             Focus on the highest-impact skills first. Building these skills can
-            significantly improve your chances of matching modern frontend
-            internship requirements.
+            significantly improve your match with the detected internship role.
           </p>
 
           <div className="ai-recommendation-list">
-            <div>
-              <CheckCircle2 size={17} />
-              <span>Learn TypeScript fundamentals</span>
-            </div>
-
-            <div>
-              <CheckCircle2 size={17} />
-              <span>Build one Next.js project</span>
-            </div>
-
-            <div>
-              <CheckCircle2 size={17} />
-              <span>Add testing to your React projects</span>
-            </div>
+            {(missingSkills.length ? missingSkills.slice(0, 3) : matchedSkills.slice(0, 3)).map((skill) => (
+              <div key={skill.name}>
+                <CheckCircle2 size={17} />
+                <span>
+                  {missingSkills.length
+                    ? `Learn ${skill.name}`
+                    : `Strengthen ${skill.name}`}
+                </span>
+              </div>
+            ))}
           </div>
 
           <button
             type="button"
             className="skill-gap-primary-button"
-            onClick={() => startSkillPreparation(missingSkills[0], "hard")}
+            onClick={() => {
+              const firstSkill = missingSkills[0] || matchedSkills[0];
+              if (firstSkill) startSkillPreparation(firstSkill, "hard");
+            }}
           >
             Start learning path
             <ArrowRight size={18} />
@@ -767,12 +814,18 @@ function SkillGap() {
           <h2>You're closer than you think.</h2>
 
           <p>
-            Close just a few high-priority gaps and your profile can become much
-            more competitive.
+            Focus on the highest-priority missing skills shown in your analysis and practise them in the Preparation Agent.
           </p>
         </div>
 
-        <button type="button" className="skill-gap-primary-button">
+        <button
+          type="button"
+          className="skill-gap-primary-button"
+          onClick={() => {
+            const firstSkill = missingSkills[0] || matchedSkills[0];
+            if (firstSkill) startSkillPreparation(firstSkill, "hard");
+          }}
+        >
           Improve my skills
           <ArrowRight size={18} />
         </button>

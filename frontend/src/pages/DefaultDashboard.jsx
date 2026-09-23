@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
   Upload,
   FileText,
@@ -13,32 +12,53 @@ import {
   CheckCircle2,
   LockKeyhole,
   ChevronRight,
+  ShieldCheck,
+  Brain,
+  Rocket,
+  Search,
+  BarChart3,
+  GraduationCap,
 } from "lucide-react";
-
 import "../styles/DefaultDashboard.css";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+const getToken = () =>
+  localStorage.getItem("access_token") ||
+  localStorage.getItem("accessToken") ||
+  localStorage.getItem("token") ||
+  localStorage.getItem("authToken") ||
+  "";
 
 function DefaultDashboard() {
   const navigate = useNavigate();
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+  const [internshipCount, setInternshipCount] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const [totalInternships, setTotalInternships] = useState(null);
+  const currentDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        timeZone: "Asia/Kolkata",
+      }).format(new Date()),
+    [],
+  );
 
   useEffect(() => {
-    const token =
-      localStorage.getItem("access_token") ||
-      localStorage.getItem("accessToken") ||
-      localStorage.getItem("token") ||
-      localStorage.getItem("authToken") ||
-      "";
-
-    if (!token) {
-      return;
-    }
-
     let cancelled = false;
 
     const loadInternshipCount = async () => {
+      const token = getToken();
+
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await fetch(
           `${API_BASE_URL}/api/internships/matched?min_match=30`,
@@ -52,6 +72,7 @@ function DefaultDashboard() {
         );
 
         if (!response.ok) {
+          if (!cancelled) setInternshipCount(0);
           return;
         }
 
@@ -75,10 +96,20 @@ function DefaultDashboard() {
         );
 
         if (!cancelled) {
-          setTotalInternships(Number.isFinite(count) ? count : list.length);
+          setInternshipCount(
+            Number.isFinite(count) ? count : list.length,
+          );
         }
       } catch (error) {
-        console.warn("Unable to load internship count:", error);
+        console.error("Internship count error:", error);
+
+        if (!cancelled) {
+          setInternshipCount(0);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
@@ -87,504 +118,502 @@ function DefaultDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [API_BASE_URL]);
+  }, []);
 
-  const handleViewInternships = () => {
-    navigate("/internships");
-  };
-
-  const currentDate = new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Kolkata",
-  }).format(new Date());
-
-  const handleUploadResume = () => {
-    navigate("/resume");
-  };
-
-  const workflowSteps = [
+  const steps = [
     {
       number: "01",
-      title: "Create Account",
-      description: "Create your account and get started.",
+      title: "Account created",
+      description:
+        "Your InternMatchAI workspace is ready.",
       icon: UserRound,
-      className: "workflow-account",
-      completed: true,
+      state: "done",
     },
     {
       number: "02",
-      title: "Upload Resume",
-      description: "Upload your PDF or DOC/DOCX resume.",
+      title: "Upload resume",
+      description:
+        "Upload PDF, DOC or DOCX to start your AI journey.",
       icon: Upload,
-      className: "workflow-upload",
-      action: true,
+      state: "active",
+      action: () => navigate("/resume"),
+      actionText: "Upload now",
     },
     {
       number: "03",
-      title: "AI Resume Analysis",
-      description: "AI analyzes your skills, education and experience.",
-      icon: Sparkles,
-      className: "workflow-ai",
-      locked: true,
+      title: "AI analysis",
+      description:
+        "Skills, education and experience are extracted.",
+      icon: Brain,
+      state: "locked",
     },
     {
       number: "04",
-      title: "Profile Generation",
-      description: "Your professional profile is created automatically.",
+      title: "Profile intelligence",
+      description:
+        "Your professional profile is generated.",
       icon: UserRound,
-      className: "workflow-profile",
-      locked: true,
+      state: "locked",
     },
     {
       number: "05",
-      title: "Internship Matching",
-      description: "Find internships based on your profile and skills.",
+      title: "Internship matching",
+      description:
+        "Opportunities are matched to your profile.",
       icon: BriefcaseBusiness,
-      className: "workflow-internship",
-      action: true,
+      state: "locked",
     },
     {
       number: "06",
-      title: "Skill Gap Analysis",
-      description: "Discover missing skills and improvement areas.",
+      title: "Skill gap",
+      description:
+        "See role-specific skills to strengthen.",
       icon: Target,
-      className: "workflow-skill",
-      locked: true,
+      state: "locked",
     },
     {
       number: "07",
-      title: "Apply & Track",
-      description: "Apply to internships and track your applications.",
+      title: "Apply & track",
+      description:
+        "Manage applications from one workspace.",
       icon: Send,
-      className: "workflow-apply",
-      locked: true,
+      state: "locked",
     },
   ];
 
   return (
     <div className="default-dashboard">
-      {/* =====================================================
-          BACKGROUND AMBIENT EFFECTS
-      ===================================================== */}
+      <div className="default-bg-grid" />
 
-      <div className="dashboard-orb dashboard-orb-one" aria-hidden="true" />
+      <div className="default-orb orb-a" />
+      <div className="default-orb orb-b" />
+      <div className="default-orb orb-c" />
 
-      <div className="dashboard-orb dashboard-orb-two" aria-hidden="true" />
+      <main className="default-shell">
 
-      <div className="dashboard-orb dashboard-orb-three" aria-hidden="true" />
-
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-
-      <section className="default-dashboard-header">
-        <div className="dashboard-header-content">
-          <span className="dashboard-eyebrow">
-            <Sparkles size={14} strokeWidth={2.3} />
-            AI CAREER ASSISTANT
-          </span>
-
-          <h1>
-            Build your career
-            <span> with AI.</span>
-          </h1>
-
-          <p>
-            Welcome to InternMatchAI. Upload your resume and let AI transform
-            your information into a personalized career journey.
-          </p>
-        </div>
-
-        <div className="dashboard-header-badge">
-          <div className="badge-icon">
-            <UserRound size={18} strokeWidth={2} />
+        {/* TOP BAR */}
+        <header className="default-topbar reveal">
+          <div className="default-breadcrumb">
+            <span>HOME</span>
+            <ChevronRight size={13} />
+            <strong>DASHBOARD</strong>
           </div>
 
-          <div>
-            <span>Profile Status</span>
-            <strong>Getting Started</strong>
+          <div className="default-date">
+            <BarChart3 size={15} />
+            {currentDate}
           </div>
-        </div>
+        </header>
 
-        <div className="dashboard-current-date">{currentDate}</div>
-      </section>
+        {/* HERO */}
+        <section className="default-hero glass reveal reveal-delay-1">
 
-      {/* =====================================================
-          PROFILE PROGRESS
-      ===================================================== */}
+          <div className="default-hero-copy">
 
-      <section className="profile-progress-card">
-        <div className="progress-card-left">
-          <div className="progress-icon">
-            <Sparkles size={22} strokeWidth={2} />
-          </div>
+            <span className="eyebrow">
+              <Sparkles size={15} />
+              AI CAREER LAUNCHPAD
+            </span>
 
-          <div className="progress-text">
-            <div className="progress-title-row">
-              <h2>Complete your career profile</h2>
-
-              <span>20%</span>
-            </div>
+            <h1>
+              Build your career
+              <span>with intelligence.</span>
+            </h1>
 
             <p>
-              Upload your resume to unlock your personalized AI career
-              dashboard.
+              Welcome to InternMatchAI. Upload your resume once and let
+              the platform transform it into a personalized internship,
+              skill and application journey.
             </p>
 
-            <div className="progress-track">
-              <div className="progress-value" />
+            <div className="hero-actions">
+
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => navigate("/resume")}
+              >
+                <Upload size={18} />
+                Upload your resume
+                <ArrowRight size={17} />
+              </button>
+
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => navigate("/internships")}
+              >
+                <Search size={17} />
+                Explore internships
+              </button>
+
             </div>
+
+            <div className="hero-trust-row">
+
+              <span>
+                <ShieldCheck size={15} />
+                Private & secure
+              </span>
+
+              <span>
+                <Brain size={15} />
+                Regex + AI analysis
+              </span>
+
+              <span>
+                <Rocket size={15} />
+                Personalized journey
+              </span>
+
+            </div>
+
           </div>
-        </div>
 
-        <div className="progress-status">
-          <CheckCircle2 size={18} strokeWidth={2.2} />
+          <div className="launchpad-visual">
 
-          <span>Account created</span>
-        </div>
-      </section>
+            <div className="visual-orbit orbit-1" />
+            <div className="visual-orbit orbit-2" />
 
-      {/* =====================================================
-          RESUME UPLOAD HERO
-      ===================================================== */}
+            <div className="visual-core">
 
-      <section className="resume-upload-card">
-        <div className="resume-card-glow" />
+              <div className="core-icon">
+                <Sparkles size={30} />
+              </div>
 
-        <div className="resume-card-content">
-          <div className="resume-card-icon">
-            <Upload size={29} strokeWidth={2} />
+              <strong>AI</strong>
+
+              <span>Career engine</span>
+
+            </div>
+
+            <div className="floating-mini mini-top">
+
+              <CheckCircle2 size={16} />
+
+              <div>
+                <span>PROFILE</span>
+                <strong>Ready to build</strong>
+              </div>
+
+            </div>
+
+            <div className="floating-mini mini-bottom">
+
+              <BriefcaseBusiness size={16} />
+
+              <div>
+                <span>OPPORTUNITIES</span>
+
+                <strong>
+                  {loading
+                    ? "Loading..."
+                    : `${internshipCount ?? 0} available`}
+                </strong>
+              </div>
+
+            </div>
+
           </div>
 
-          <span className="resume-card-label">STEP 1 · GET STARTED</span>
+        </section>
 
-          <h2>Upload your resume</h2>
+        {/* FIRST MILESTONE */}
+        <section className="progress-panel glass reveal reveal-delay-2">
 
-          <p>
-            Upload your PDF or DOC/DOCX resume. Our AI will analyze your skills,
-            education and experience and automatically build your professional
-            profile.
-          </p>
+          <div className="progress-ring-small">
 
-          <div className="resume-supported">
-            <span>
-              <CheckCircle2 size={15} />
-              PDF
+            <svg viewBox="0 0 90 90">
+              <circle
+                cx="45"
+                cy="45"
+                r="36"
+                className="ring-track"
+              />
+
+              <circle
+                cx="45"
+                cy="45"
+                r="36"
+                className="ring-value"
+                pathLength="100"
+              />
+            </svg>
+
+            <strong>20%</strong>
+
+          </div>
+
+          <div className="progress-copy">
+
+            <span className="section-kicker">
+              YOUR FIRST MILESTONE
             </span>
 
-            <span>
-              <CheckCircle2 size={15} />
-              DOC
-            </span>
+            <h2>Complete your career profile</h2>
 
-            <span>
-              <CheckCircle2 size={15} />
-              DOCX
-            </span>
+            <p>
+              Upload your resume to unlock AI analysis,
+              your professional profile, personalized skill gap
+              analysis and internship matching.
+            </p>
+
           </div>
 
           <button
             type="button"
-            className="resume-upload-button"
-            onClick={handleUploadResume}
+            className="progress-button"
+            onClick={() => navigate("/resume")}
           >
-            <Upload size={18} strokeWidth={2.2} />
-
-            <span>Upload Resume</span>
-
-            <ArrowRight size={18} strokeWidth={2.2} className="button-arrow" />
+            Start with resume
+            <ArrowRight size={16} />
           </button>
-        </div>
 
-        {/* RESUME VISUAL */}
+        </section>
 
-        <div className="resume-visual">
-          <div className="resume-document">
-            <div className="document-top">
-              <div className="document-avatar">
-                <UserRound size={17} />
-              </div>
+        {/* CAREER JOURNEY */}
+        <section className="journey-heading reveal">
 
-              <div className="document-lines">
-                <span />
-                <span />
-              </div>
-            </div>
+          <div>
+            <span className="section-kicker">
+              YOUR CAREER JOURNEY
+            </span>
 
-            <div className="document-section">
-              <span className="document-heading" />
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-
-            <div className="document-section">
-              <span className="document-heading" />
-              <span />
-              <span />
-            </div>
-
-            <div className="document-section">
-              <span className="document-heading" />
-              <span />
-              <span />
-              <span />
-            </div>
+            <h2>From resume to opportunity</h2>
           </div>
 
-          <div className="ai-floating-card">
-            <div className="ai-floating-icon">
-              <Sparkles size={16} />
-            </div>
+          <p>
+            Every stage unlocks the next part of your
+            personalized career workspace.
+          </p>
 
-            <div>
-              <span>AI Analysis</span>
-              <strong>Waiting for resume</strong>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* =====================================================
-          WORKFLOW HEADER
-      ===================================================== */}
+        <section className="journey-grid">
 
-      <section className="workflow-header">
-        <div>
-          <span className="section-label">YOUR CAREER JOURNEY</span>
+          {steps.map((step, index) => {
 
-          <h2>From resume to career opportunity</h2>
-        </div>
+            const Icon = step.icon;
 
-        <p>
-          Follow the steps below to unlock your complete AI-powered career
-          experience.
-        </p>
-      </section>
-
-      {/* =====================================================
-          WORKFLOW
-      ===================================================== */}
-
-      <section className="career-workflow">
-        {workflowSteps.map((step, index) => {
-          const Icon = step.icon;
-
-          return (
-            <div className="workflow-step-wrapper" key={step.number}>
+            return (
               <article
-                className={`workflow-step ${step.className} ${
-                  step.locked ? "workflow-locked" : ""
-                } ${step.completed ? "workflow-completed" : ""}`}
-                onClick={step.action ? handleUploadResume : undefined}
+                key={step.number}
+                className={`journey-card glass journey-${step.state} reveal reveal-delay-${Math.min(
+                  index + 1,
+                  6,
+                )}`}
+                onClick={step.action}
+                role={step.action ? "button" : undefined}
+                tabIndex={step.action ? 0 : undefined}
+                onKeyDown={(event) => {
+                  if (
+                    step.action &&
+                    (event.key === "Enter" ||
+                      event.key === " ")
+                  ) {
+                    event.preventDefault();
+                    step.action();
+                  }
+                }}
               >
-                {/* TOP */}
 
-                <div className="workflow-step-top">
-                  <span className="workflow-number">{step.number}</span>
+                <div className="journey-card-top">
 
-                  {step.locked && (
-                    <span className="workflow-lock">
-                      <LockKeyhole size={14} strokeWidth={2.2} />
-                    </span>
+                  <span>{step.number}</span>
+
+                  {step.state === "locked" && (
+                    <LockKeyhole size={15} />
                   )}
 
-                  {step.completed && (
-                    <span className="workflow-check">
-                      <CheckCircle2 size={15} strokeWidth={2.2} />
-                    </span>
+                  {step.state === "done" && (
+                    <CheckCircle2 size={16} />
                   )}
+
                 </div>
 
-                {/* ICON */}
-
-                <div className="workflow-icon">
-                  <Icon size={24} strokeWidth={2} />
+                <div className="journey-icon">
+                  <Icon size={23} />
                 </div>
-
-                {/* CONTENT */}
 
                 <h3>{step.title}</h3>
 
                 <p>{step.description}</p>
 
-                {/* STATUS */}
-
                 {step.action && (
-                  <div className="workflow-action">
-                    <span>
-                      {step.className === "workflow-internship"
-                        ? "Browse internships"
-                        : "Upload now"}
-                    </span>
-
-                    <ArrowRight size={15} strokeWidth={2.2} />
+                  <div className="journey-action">
+                    {step.actionText}
+                    <ArrowRight size={15} />
                   </div>
                 )}
 
-                {step.locked && (
-                  <div className="workflow-locked-text">
-                    <LockKeyhole size={13} strokeWidth={2} />
-
-                    <span>Unlock after resume</span>
+                {step.state === "locked" && (
+                  <div className="locked-label">
+                    <LockKeyhole size={13} />
+                    Unlock after resume
                   </div>
                 )}
 
-                {step.completed && (
-                  <div className="workflow-completed-text">
-                    <CheckCircle2 size={13} strokeWidth={2} />
-
-                    <span>Completed</span>
+                {step.state === "done" && (
+                  <div className="done-label">
+                    <CheckCircle2 size={13} />
+                    Completed
                   </div>
                 )}
+
               </article>
+            );
+          })}
 
-              {/* =================================================
-                  ARROW BETWEEN STEPS
-              ================================================= */}
+        </section>
 
-              {index < workflowSteps.length - 1 && (
-                <div className="workflow-arrow">
-                  <ChevronRight size={20} strokeWidth={2} />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </section>
+        {/* UNLOCKED FEATURES */}
+        <section className="unlock-heading reveal">
 
-      {/* =====================================================
-          FEATURE SUMMARY
-      ===================================================== */}
+          <div>
+            <span className="section-kicker">
+              WHAT YOU UNLOCK
+            </span>
 
-      <section className="dashboard-features-header">
-        <div>
-          <span className="section-label">WHAT YOU WILL UNLOCK</span>
+            <h2>Your AI career toolkit</h2>
+          </div>
 
-          <h2>Your AI career toolkit</h2>
-        </div>
+          <p>
+            Internship discovery remains available.
+            Personalized tools activate after resume analysis.
+          </p>
 
-        <p>
-          Browse internships now; upload your resume to unlock the personalized
-          tools.
-        </p>
-      </section>
+        </section>
 
-      <section className="default-dashboard-features">
-        <article className="default-feature-card feature-blue">
-          <div className="feature-card-top">
-            <div className="feature-icon">
+        <section className="unlock-grid">
+
+          <article className="unlock-card unlock-blue glass reveal">
+
+            <div className="unlock-icon">
               <FileText size={22} />
             </div>
 
-            <div className="feature-lock">
-              <LockKeyhole size={14} />
-            </div>
-          </div>
+            <span className="unlock-status">
+              <LockKeyhole size={13} />
+              LOCKED
+            </span>
 
-          <h3>AI Resume Analysis</h3>
+            <h3>AI Resume Analysis</h3>
 
-          <p>
-            Extract skills, education, experience and professional information
-            from your resume.
-          </p>
+            <p>
+              Extract structured skills, education,
+              experience and professional information
+              from your resume.
+            </p>
 
-          <div className="feature-bottom">
-            <span>Locked</span>
+            <button
+              type="button"
+              onClick={() => navigate("/resume")}
+            >
+              Upload resume
+              <ArrowRight size={15} />
+            </button>
 
-            <ArrowRight size={16} />
-          </div>
-        </article>
+          </article>
 
-        <article
-          className="default-feature-card feature-purple feature-accessible"
-          onClick={handleViewInternships}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              handleViewInternships();
-            }
-          }}
-          aria-label="Browse internships"
-        >
-          <div className="feature-card-top">
-            <div className="feature-icon">
+          <article
+            className="unlock-card unlock-violet glass clickable reveal reveal-delay-1"
+            onClick={() => navigate("/internships")}
+          >
+
+            <div className="unlock-icon">
               <BriefcaseBusiness size={22} />
             </div>
 
-            <div className="feature-access-badge">OPEN</div>
-          </div>
+            <span className="unlock-status open">
+              <CheckCircle2 size={13} />
+              OPEN
+            </span>
 
-          <h3>Internships</h3>
+            <h3>Internship discovery</h3>
 
-          <p>
-            Browse available internship opportunities and open any internship to
-            view its complete details.
-          </p>
+            <p>
+              Browse internship opportunities and
+              inspect complete opportunity details.
+            </p>
 
-          <div className="feature-internship-count">
-            <strong>
-              {totalInternships === null ? "—" : totalInternships}
+            <strong className="internship-count">
+              {loading ? "—" : internshipCount ?? 0}
+              <small> opportunities</small>
             </strong>
-            <span>internships available</span>
-          </div>
 
-          <div className="feature-bottom">
-            <span>Browse internships</span>
+            <button type="button">
+              Browse internships
+              <ArrowRight size={15} />
+            </button>
 
-            <ArrowRight size={16} />
-          </div>
-        </article>
+          </article>
 
-        <article className="default-feature-card feature-orange">
-          <div className="feature-card-top">
-            <div className="feature-icon">
+          <article className="unlock-card unlock-orange glass reveal reveal-delay-2">
+
+            <div className="unlock-icon">
               <Target size={22} />
             </div>
 
-            <div className="feature-lock">
-              <LockKeyhole size={14} />
-            </div>
+            <span className="unlock-status">
+              <LockKeyhole size={13} />
+              LOCKED
+            </span>
+
+            <h3>Skill Gap Intelligence</h3>
+
+            <p>
+              Compare your actual resume skills with
+              the target role and build a learning roadmap.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => navigate("/resume")}
+            >
+              Unlock analysis
+              <ArrowRight size={15} />
+            </button>
+
+          </article>
+
+        </section>
+
+        {/* BOTTOM CTA */}
+        <section className="default-bottom-banner glass reveal">
+
+          <div className="banner-icon">
+            <GraduationCap size={24} />
           </div>
 
-          <h3>Skill Gap Analysis</h3>
+          <div>
 
-          <p>
-            Identify missing skills and understand where you should improve.
-          </p>
+            <span className="section-kicker">
+              ONE STEP STARTS EVERYTHING
+            </span>
 
-          <div className="feature-bottom">
-            <span>Locked</span>
+            <h2>
+              Upload your resume. Let AI do the heavy lifting.
+            </h2>
 
+            <p>
+              Your analyzed resume becomes the foundation
+              for your profile, internship matching,
+              skill gap and preparation experience.
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/resume")}
+          >
+            Get started
             <ArrowRight size={16} />
-          </div>
-        </article>
-      </section>
+          </button>
 
-      {/* =====================================================
-          BOTTOM TIP
-      ===================================================== */}
+        </section>
 
-      <section className="dashboard-tip">
-        <div className="tip-icon">
-          <Sparkles size={19} />
-        </div>
-
-        <div>
-          <strong>One resume unlocks your complete journey</strong>
-
-          <p>
-            Upload your resume once and InternMatchAI will use your profile to
-            personalize your internships, skill gap analysis and interview
-            preparation.
-          </p>
-        </div>
-      </section>
+      </main>
     </div>
   );
 }

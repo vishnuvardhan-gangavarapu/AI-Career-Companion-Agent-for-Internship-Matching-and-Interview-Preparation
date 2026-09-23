@@ -95,6 +95,40 @@ const getAuthHeaders = () => {
     : {};
 };
 
+const getSkillGapResumeStorageKey = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user?.id ?? user?.user_id ?? user?.userId ?? "current";
+    return `selectedSkillGapResumeId_${userId}`;
+  } catch {
+    return "selectedSkillGapResumeId_current";
+  }
+};
+
+const setSelectedSkillGapResumeId = (resumeId) => {
+  if (!resumeId) return;
+
+  const key = getSkillGapResumeStorageKey();
+  localStorage.setItem(key, String(resumeId));
+
+  // Keep the generic key as a compatibility fallback for the existing UI.
+  localStorage.setItem("selectedSkillGapResumeId", String(resumeId));
+};
+
+const clearSelectedSkillGapResumeId = (resumeId) => {
+  const key = getSkillGapResumeStorageKey();
+  const selected = localStorage.getItem(key);
+
+  if (!resumeId || selected === String(resumeId)) {
+    localStorage.removeItem(key);
+
+    const genericSelected = localStorage.getItem("selectedSkillGapResumeId");
+    if (!resumeId || genericSelected === String(resumeId)) {
+      localStorage.removeItem("selectedSkillGapResumeId");
+    }
+  }
+};
+
 const getResumeId = (item) =>
   item?.id ??
   item?.resume_id ??
@@ -685,6 +719,10 @@ const Resume = () => {
 
       const result = await response.json();
 
+      // This is the exact resume whose analysis just completed.
+      // Skill Gap will use this ID, so multiple resumes cannot be mixed.
+      setSelectedSkillGapResumeId(resumeId);
+
       await loadResumes();
 
       setMessage({
@@ -975,6 +1013,8 @@ const Resume = () => {
       setResumes((previous) =>
         previous.filter((item) => getResumeId(item) !== resumeId),
       );
+
+      clearSelectedSkillGapResumeId(resumeId);
 
       setMessage({
         type: "success",
